@@ -1,0 +1,39 @@
+@model SentinelPulse.Models.FIRModel
+@{ ViewData["Title"] = "FIR Registered"; }
+
+<div class="page-header no-print">
+    <div>
+        <h1 class="page-title">FIR Successfully Registered</h1>
+        <p class="page-sub">Case ID: <span class="badge-num">@Model.CaseId</span></p>
+    </div>
+    <div>
+        <button onclick="window.print()" class="btn-primary-amber"><i class="bi bi-printer"></i> Print FIR</button>
+    </div>
+</div>
+
+<div class="glass-card print-area">
+    <div class="print-header">
+        <h2>SENTINELPULSE — OFFICIAL FIR DOCUMENT</h2>
+        <div>Case ID: <strong>@Model.CaseId</strong> · Filed: @Model.DateFiled.ToString("dd MMM yyyy HH:mm")</div>
+    </div>
+
+    <div class="fir-grid">
+        <div><label>Citizen Name</label><div>@Model.CitizenName</div></div>
+        <div><label>CNIC</label><div class="badge-num">@Model.CitizenCNIC</div></div>
+        <div><label>Phone</label><div class="badge-num">@Model.PhoneNumber</div></div>
+        <div><label>Crime Type</label><div>@Model.CrimeType</div></div>
+        <div><label>District</label><div>@Model.District</div></div>
+        <div><label>Location</label><div>@Model.Location</div></div>
+        <div class="full"><label>Description</label><div>@Model.Description</div></div>
+        <div><label>Status</label><div><span class="status-badge @Model.Status.ToLower()">@Model.Status</span></div></div>
+        @if (ViewBag.AssignedOfficer != null)
+        {
+            <div class="full"><label>Investigating Officer</label><div>@ViewBag.AssignedOfficer</div></div>
+        }
+    </div>
+
+    <div class="print-footer">
+        <div>Officer Signature: ________________________</div>
+        <div>Citizen Signature: ________________________</div>
+    </div>
+</div>

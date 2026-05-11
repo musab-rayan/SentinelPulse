@@ -1,0 +1,43 @@
+@model List<SentinelPulse.Models.CaseModel>
+@{ ViewData["Title"] = "Crime Map"; }
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Crime Map</h1>
+        <p class="page-sub">Active Incident Locations</p>
+    </div>
+    <span class="badge-num">@Model.Count plotted</span>
+</div>
+
+<div class="glass-card" style="padding:0;overflow:hidden;">
+    <div id="crimeMap" style="height:560px;border-radius:12px;"></div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="glass-card" style="margin-top:1rem;text-align:center;color:var(--muted);">
+        <i class="bi bi-geo-alt" style="font-size:2rem;display:block;margin-bottom:.5rem;"></i>
+        No cases with location data yet. Coordinates are captured automatically when filing a new FIR.
+    </div>
+}
+
+@section Scripts {
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    var map = L.map('crimeMap').setView([33.6844, 73.0479], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    @foreach (var c in Model)
+    {
+        <text>
+        L.marker([@c.Latitude, @c.Longitude])
+            .addTo(map)
+            .bindPopup('<b>@Html.Raw(c.CaseId)</b><br>@Html.Raw(c.Title)<br>Status: @Html.Raw(c.Status)<br>Priority: @Html.Raw(c.Priority)');
+        </text>
+    }
+</script>
+}

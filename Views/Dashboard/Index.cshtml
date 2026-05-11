@@ -1,0 +1,76 @@
+@model SentinelPulse.Models.DashboardViewModel
+@{ ViewData["Title"] = "Dashboard"; }
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Command Dashboard</h1>
+        <p class="page-sub">Real-time overview of operations</p>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="glass-card stat-card">
+        <div class="stat-icon amber"><i class="bi bi-folder2-open"></i></div>
+        <div class="stat-label">Active Cases</div>
+        <div class="stat-value counter" data-target="@Model.ActiveCases">0</div>
+    </div>
+    <div class="glass-card stat-card">
+        <div class="stat-icon blue"><i class="bi bi-file-earmark-text"></i></div>
+        <div class="stat-label">Pending FIRs</div>
+        <div class="stat-value counter" data-target="@Model.PendingFIRs">0</div>
+    </div>
+    <div class="glass-card stat-card">
+        <div class="stat-icon green"><i class="bi bi-people-fill"></i></div>
+        <div class="stat-label">Total Officers</div>
+        <div class="stat-value counter" data-target="@Model.TotalOfficers">0</div>
+    </div>
+    <div class="glass-card stat-card">
+        <div class="stat-icon red"><i class="bi bi-check2-circle"></i></div>
+        <div class="stat-label">Closed Cases</div>
+        <div class="stat-value counter" data-target="@Model.ClosedCases">0</div>
+    </div>
+</div>
+
+<div class="dash-grid">
+    <div class="glass-card chart-card">
+        <div class="card-header-row">
+            <h3>Crime Distribution</h3>
+            <span class="text-muted-warm">Last 30 days</span>
+        </div>
+        <canvas id="crimeChart" height="120"></canvas>
+    </div>
+
+    <div class="glass-card table-card">
+        <div class="card-header-row">
+            <h3>Recent FIRs</h3>
+            <a asp-controller="FIR" asp-action="Create" class="link-amber">+ New FIR</a>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr><th>Case ID</th><th>Citizen</th><th>Crime</th><th>District</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                @foreach (var fir in Model.RecentFIRs)
+                {
+                    <tr>
+                        <td><span class="badge-num">@fir.CaseId</span></td>
+                        <td>@fir.CitizenName</td>
+                        <td>@fir.CrimeType</td>
+                        <td>@fir.District</td>
+                        <td><span class="status-badge @fir.Status.ToLower()">@fir.Status</span></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const crimeData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CrimeDistribution));
+    initCrimeChart(crimeData);
+    initCounters();
+</script>
+}

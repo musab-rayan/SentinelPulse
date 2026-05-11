@@ -1,0 +1,83 @@
+@model List<SentinelPulse.Models.FIRModel>
+@{ ViewData["Title"] = "FIR Registry"; }
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">FIR Registry</h1>
+        <p class="page-sub">Filed Reports</p>
+    </div>
+    <a asp-action="Create" class="btn-primary-amber"><i class="bi bi-file-earmark-plus"></i> File New FIR</a>
+</div>
+
+@if (TempData["Error"] != null)
+{
+    <div class="glass-card" style="border-left:3px solid #e74c3c;margin-bottom:1rem;padding:.75rem 1rem;color:#e74c3c">
+        <i class="bi bi-exclamation-triangle-fill"></i> @TempData["Error"]
+    </div>
+}
+
+<div class="glass-card">
+    <div class="filter-bar">
+        <div class="search-wrap">
+            <i class="bi bi-search"></i>
+            <input id="fir-search" placeholder="Search by Case ID, citizen, crime type..." />
+        </div>
+        <select id="fir-status-filter" class="form-control-warm" style="max-width:200px">
+            <option value="">All Status</option>
+            <option>Open</option>
+            <option>Investigation</option>
+            <option>Closed</option>
+        </select>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table" id="fir-table">
+            <thead>
+                <tr>
+                    <th>Case ID</th>
+                    <th>Citizen Name</th>
+                    <th>Crime Type</th>
+                    <th>District</th>
+                    <th>Status</th>
+                    <th>Date Filed</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var fir in Model)
+                {
+                    <tr>
+                        <td><span class="badge-num">@fir.CaseId</span></td>
+                        <td>@fir.CitizenName</td>
+                        <td>@fir.CrimeType</td>
+                        <td>@fir.District</td>
+                        <td><span class="status-badge @fir.Status.ToLower()">@fir.Status</span></td>
+                        <td>@fir.DateFiled.ToString("dd MMM yyyy HH:mm")</td>
+                        <td>
+                            <a asp-action="Details" asp-route-id="@fir.CaseId" class="link-amber">
+                                <i class="bi bi-printer"></i> View &amp; Print
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.getElementById('fir-search').addEventListener('input', function () {
+        const q = this.value.toLowerCase();
+        document.querySelectorAll('#fir-table tbody tr').forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+    });
+    document.getElementById('fir-status-filter').addEventListener('change', function () {
+        const val = this.value.toLowerCase();
+        document.querySelectorAll('#fir-table tbody tr').forEach(row => {
+            row.style.display = (!val || row.textContent.toLowerCase().includes(val)) ? '' : 'none';
+        });
+    });
+</script>
+}

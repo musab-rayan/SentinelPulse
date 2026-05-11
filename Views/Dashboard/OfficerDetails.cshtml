@@ -1,0 +1,112 @@
+@model SentinelPulse.Models.OfficerModel
+@{
+    ViewData["Title"] = $"Officer — {Model.Name}";
+    var sessionRole = Context.Session.GetString("OfficerRole");
+    var activeCases = ViewBag.ActiveCases as List<SentinelPulse.Models.CaseModel> ?? new();
+    var closedCount = (int)(ViewBag.ClosedCases ?? 0);
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">@Model.Name</h1>
+        <p class="page-sub"><span class="badge-num">@Model.BadgeNumber</span> · @Model.Role</p>
+    </div>
+    <a href="/Dashboard/Officers" class="btn-ghost"><i class="bi bi-arrow-left"></i> Back</a>
+</div>
+
+<div class="dash-grid">
+    <div class="glass-card">
+        <h3><i class="bi bi-person-badge"></i> Officer Profile</h3>
+        <div style="display:flex;align-items:center;gap:1.5rem;margin-bottom:1.5rem;margin-top:1rem;">
+            <div class="officer-avatar" style="width:72px;height:72px;font-size:2rem;flex-shrink:0;">
+                @(Model.Name.Length > 0 ? Model.Name[0].ToString().ToUpper() : "?")
+            </div>
+            <div>
+                <div style="font-size:1.2rem;font-weight:700;">@Model.Name</div>
+                <div style="color:var(--muted);font-size:.85rem;">@Model.Role</div>
+            </div>
+        </div>
+        <div class="kv"><label>Badge Number</label><div><span class="badge-num">@Model.BadgeNumber</span></div></div>
+        <div class="kv"><label>Email</label><div>@Model.Email</div></div>
+        @if (!string.IsNullOrEmpty(Model.Phone))
+        {
+            <div class="kv"><label>Phone</label><div>@Model.Phone</div></div>
+        }
+        <div class="kv">
+            <label>Status</label>
+            <div>
+                <span style="display:inline-block;padding:.25rem .7rem;border-radius:12px;font-size:.72rem;font-weight:600;text-transform:uppercase;
+                    background:@(Model.Status == "Active" ? "rgba(76,175,125,0.18)" : "rgba(200,150,42,0.18)");
+                    color:@(Model.Status == "Active" ? "var(--success)" : "var(--primary-2)");">
+                    @(Model.Status ?? "Active")
+                </span>
+            </div>
+        </div>
+
+        @if (sessionRole == "Admin")
+        {
+            <div style="margin-top:1.25rem;display:flex;gap:.75rem;flex-wrap:wrap;">
+                <form asp-controller="Dashboard" asp-action="UpdateOfficerStatus" asp-route-id="@Model.Id" method="post" style="display:inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="status" value="Active" />
+                    <button type="submit" class="btn-primary-amber" style="width:auto;padding:.45rem 1rem;font-size:.85rem;">
+                        <i class="bi bi-check-circle"></i> Set Active
+                    </button>
+                </form>
+                <form asp-controller="Dashboard" asp-action="UpdateOfficerStatus" asp-route-id="@Model.Id" method="post" style="display:inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="status" value="On Leave" />
+                    <button type="submit" class="btn-ghost" style="padding:.45rem 1rem;font-size:.85rem;">
+                        <i class="bi bi-moon"></i> Set On Leave
+                    </button>
+                </form>
+            </div>
+        }
+    </div>
+
+    <div class="glass-card">
+        <h3><i class="bi bi-bar-chart-line"></i> Case Statistics</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+            <div class="glass-card" style="text-align:center;padding:1rem;">
+                <div class="stat-icon amber" style="margin:0 auto .5rem;"><i class="bi bi-folder2-open"></i></div>
+                <div class="stat-label">Active Cases</div>
+                <div class="stat-value" style="font-size:1.8rem;">@activeCases.Count</div>
+            </div>
+            <div class="glass-card" style="text-align:center;padding:1rem;">
+                <div class="stat-icon green" style="margin:0 auto .5rem;"><i class="bi bi-check2-circle"></i></div>
+                <div class="stat-label">Closed Cases</div>
+                <div class="stat-value" style="font-size:1.8rem;">@closedCount</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (activeCases.Any())
+{
+    <div class="glass-card" style="margin-top:1.5rem;">
+        <div class="card-header-row">
+            <h3><i class="bi bi-folder2-open"></i> Active Cases</h3>
+            <span class="badge-num">@activeCases.Count open</span>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr><th>Case ID</th><th>Title</th><th>Status</th><th>Priority</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in activeCases)
+                    {
+                        var dot = c.Priority switch { "High" => "dot-red", "Medium" => "dot-amber", _ => "dot-green" };
+                        <tr>
+                            <td><span class="badge-num">@c.CaseId</span></td>
+                            <td>@c.Title</td>
+                            <td><span class="status-badge @c.Status.ToLower().Replace(" ", "-")">@c.Status</span></td>
+                            <td><span class="prio-dot @dot"></span> @c.Priority</td>
+                            <td><a asp-controller="Cases" asp-action="Details" asp-route-id="@c.CaseId" class="link-amber">View</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

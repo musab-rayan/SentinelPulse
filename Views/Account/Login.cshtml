@@ -1,0 +1,40 @@
+@model SentinelPulse.Models.LoginViewModel
+@{
+    ViewData["Title"] = "Sign In";
+    Layout = "_Layout";
+}
+
+<div class="login-bg">
+    <div class="login-grid"></div>
+    <div class="login-card glass-card">
+        <div class="login-brand">
+            <div class="brand-logo lg"><i class="bi bi-shield-shaded"></i></div>
+            <h1>SentinelPulse</h1>
+            <p>Law Enforcement Operations Portal</p>
+        </div>
+
+        <form asp-action="Login" method="post" class="login-form">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="alert-error"></div>
+
+            <label>Username</label>
+            <div class="input-wrap">
+                <i class="bi bi-person"></i>
+                <input asp-for="Username" autocomplete="username" placeholder="Enter username" />
+            </div>
+            <span asp-validation-for="Username" class="field-error"></span>
+
+            <label>Password</label>
+            <div class="input-wrap">
+                <i class="bi bi-lock"></i>
+                <input asp-for="Password" type="password" autocomplete="current-password" placeholder="Enter password" />
+            </div>
+            <span asp-validation-for="Password" class="field-error"></span>
+
+            <button type="submit" class="btn-primary-amber">
+                <i class="bi bi-box-arrow-in-right"></i> Sign In
+            </button>
+        </form>
+
+    </div>
+</div>

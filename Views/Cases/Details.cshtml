@@ -1,0 +1,228 @@
+@model SentinelPulse.Models.CaseModel
+@{ ViewData["Title"] = $"Case {Model.CaseId}"; }
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">@Model.Title</h1>
+        <p class="page-sub"><span class="badge-num">@Model.CaseId</span> · Assigned to @Model.AssignedOfficer</p>
+    </div>
+    <a asp-action="Index" class="btn-ghost"><i class="bi bi-arrow-left"></i> Back</a>
+</div>
+
+<div class="dash-grid">
+    <div class="glass-card">
+        <h3>Status Timeline</h3>
+        @{
+            var steps = new[] { "Open", "Under Investigation", "Pending Approval", "Closed" };
+            var current = Model.Status switch {
+                "Open" => 0,
+                "Under Investigation" => 1,
+                "Pending Approval" => 2,
+                "Closed" => 3,
+                _ => 0
+            };
+        }
+        <div class="timeline">
+            @for (int i = 0; i < steps.Length; i++)
+            {
+                <div class="timeline-step @(i <= current ? "done" : "") @(i == current ? "current" : "")">
+                    <div class="ts-dot">@(i + 1)</div>
+                    <div class="ts-label">@steps[i]</div>
+                </div>
+                @if (i < steps.Length - 1)
+                {
+                    <div class="timeline-line @(i < current ? "done" : "")"></div>
+                }
+            }
+        </div>
+    </div>
+
+    <div class="glass-card">
+        <h3>Case Details</h3>
+        <div class="kv"><label>Priority</label><div>@Model.Priority</div></div>
+        <div class="kv"><label>Status</label><div><span class="status-badge @Model.Status.ToLower().Replace(" ", "-")">@Model.Status</span></div></div>
+        <div class="kv"><label>Date Opened</label><div>@Model.DateOpened.ToString("dd MMM yyyy HH:mm")</div></div>
+        <div class="kv"><label>Last Updated</label><div>@Model.LastUpdated.ToString("dd MMM yyyy HH:mm")</div></div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.InvestigationNotes))
+{
+    <div class="glass-card" style="margin-top:1.5rem">
+        <h3><i class="bi bi-journal-text"></i> Investigation Notes</h3>
+        <p style="white-space:pre-wrap; margin:0.75rem 0 0;">@Model.InvestigationNotes</p>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.ClosureReason))
+{
+    <div class="glass-card" style="margin-top:1rem">
+        <h3><i class="bi bi-lock-fill"></i> Closure Reason</h3>
+        <p style="white-space:pre-wrap; margin:0.75rem 0 0;">@Model.ClosureReason</p>
+    </div>
+}
+
+@{
+    var sessionRole = Context.Session.GetString("OfficerRole");
+    var sessionName = Context.Session.GetString("OfficerName");
+    var canUpdate = sessionRole == "Admin" || Model.AssignedOfficer == sessionName;
+}
+
+@if (canUpdate && Model.Status != "Closed")
+{
+    <div class="glass-card" style="margin-top:1rem">
+        <h3><i class="bi bi-pencil-square"></i> Update Case</h3>
+        <form method="post" asp-action="UpdateStatus" asp-route-id="@Model.CaseId" style="margin-top:1rem">
+            @Html.AntiForgeryToken()
+            <div class="mb-3">
+                <label class="form-label">Update Status</label>
+                <select name="status" class="form-control-warm" style="width:100%;padding:.5rem .75rem;margin-bottom:1rem">
+                    @if (sessionRole == "Admin")
+                    {
+                        <option value="Open">Open</option>
+                        <option value="Under Investigation">Under Investigation</option>
+                        <option value="Pending Approval">Pending Approval</option>
+                        <option value="Closed">Closed</option>
+                    }
+                    else
+                    {
+                        <option value="Under Investigation">Under Investigation</option>
+                        <option value="Pending Approval">Submit for Closure Approval</option>
+                    }
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Notes / Findings</label>
+                <textarea name="notes" class="form-control-warm" rows="3"
+                    placeholder="Add investigation notes or closure reason..."
+                    style="width:100%;padding:.5rem .75rem;resize:vertical;margin-bottom:1rem"></textarea>
+            </div>
+            <button type="submit" class="btn-primary-amber"><i class="bi bi-check2"></i> Update Case</button>
+        </form>
+    </div>
+}
+
+@{
+    var evidenceList = ViewBag.Evidence as List<SentinelPulse.Models.EvidenceModel> ?? new List<SentinelPulse.Models.EvidenceModel>();
+    var suspectList  = ViewBag.Suspects  as List<SentinelPulse.Models.SuspectModel>  ?? new List<SentinelPulse.Models.SuspectModel>();
+}
+
+<div class="glass-card" style="margin-top:1.5rem;">
+    <div class="card-header-row">
+        <h3><i class="bi bi-archive"></i> Evidence Locker</h3>
+        <span class="badge-num">@evidenceList.Count items</span>
+    </div>
+
+    @if (evidenceList.Any())
+    {
+        <div class="table-responsive" style="margin-bottom:1.5rem;">
+            <table class="data-table">
+                <thead>
+                    <tr><th>Type</th><th>Description</th><th>Collected By</th><th>Date</th>@if (sessionRole == "Admin") { <th></th> }</tr>
+                </thead>
+                <tbody>
+                    @foreach (var ev in evidenceList)
+                    {
+                        <tr>
+                            <td><span class="status-badge investigation">@ev.Type</span></td>
+                            <td>@ev.Description</td>
+                            <td>@ev.CollectedBy</td>
+                            <td>@ev.CollectedDate.ToString("dd MMM yyyy HH:mm")</td>
+                            @if (sessionRole == "Admin")
+                            {
+                                <td>
+                                    <form asp-controller="Evidence" asp-action="Delete" method="post" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@ev.Id" />
+                                        <input type="hidden" name="caseId" value="@Model.CaseId" />
+                                        <button type="submit" class="link-danger" onclick="return confirm('Delete this evidence item?')">
+                                            <i class="bi bi-trash"></i> Delete
+                                        </button>
+                                    </form>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <p style="color:var(--muted);margin:.75rem 0 1.5rem;">No evidence logged yet.</p>
+    }
+
+    @if (canUpdate)
+    {
+        <h4 style="font-size:.95rem;margin-bottom:.75rem;"><i class="bi bi-plus-circle"></i> Add Evidence</h4>
+        <form method="post" asp-controller="Evidence" asp-action="Add">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="CaseId" value="@Model.CaseId" />
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Type</label>
+                    <select name="Type" class="form-control-warm">
+                        <option>Physical</option>
+                        <option>Digital</option>
+                        <option>Document</option>
+                        <option>Forensic</option>
+                        <option>Witness Statement</option>
+                        <option>CCTV Footage</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="Description" class="form-control-warm" rows="2" required
+                        placeholder="Describe the evidence item..."></textarea>
+                </div>
+            </div>
+            <button type="submit" class="btn-primary-amber" style="width:auto;padding:.5rem 1.5rem;">
+                <i class="bi bi-plus-lg"></i> Add Evidence
+            </button>
+        </form>
+    }
+</div>
+
+@if (suspectList.Any())
+{
+    <div class="glass-card" style="margin-top:1.5rem;">
+        <div class="card-header-row">
+            <h3><i class="bi bi-person-exclamation"></i> Suspects</h3>
+            <span class="badge-num">@suspectList.Count on record</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;margin-top:1rem;">
+            @foreach (var s in suspectList)
+            {
+                <div class="glass-card" style="padding:1rem;">
+                    @if (!string.IsNullOrEmpty(s.PhotoPath))
+                    {
+                        <img src="@s.PhotoPath" alt="Suspect photo"
+                             style="width:100%;height:160px;object-fit:cover;border-radius:8px;margin-bottom:.75rem;" />
+                    }
+                    else
+                    {
+                        <div style="width:100%;height:80px;display:grid;place-items:center;background:var(--border);border-radius:8px;margin-bottom:.75rem;color:var(--muted);font-size:2rem;">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                    }
+                    <div style="font-weight:700;font-size:1rem;">@s.Name</div>
+                    @if (!string.IsNullOrEmpty(s.CNIC))
+                    {
+                        <div style="font-size:.8rem;color:var(--muted);margin:.2rem 0;"><span class="badge-num">@s.CNIC</span></div>
+                    }
+                    @if (!string.IsNullOrEmpty(s.Description))
+                    {
+                        <p style="font-size:.85rem;color:var(--muted);margin:.5rem 0 0;">@s.Description</p>
+                    }
+                    @if (!string.IsNullOrEmpty(s.FaceDetectionResult))
+                    {
+                        <div style="margin-top:.5rem;padding:.4rem .7rem;background:rgba(200,150,42,0.12);border-radius:6px;font-size:.78rem;color:var(--primary-2);">
+                            <i class="bi bi-cpu"></i> @s.FaceDetectionResult
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}

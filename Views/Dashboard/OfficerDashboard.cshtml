@@ -1,0 +1,61 @@
+@model SentinelPulse.Models.DashboardViewModel
+@{ ViewData["Title"] = "Officer Dashboard"; }
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Operations Overview</h1>
+        <p class="page-sub">Your activity</p>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="glass-card stat-card">
+        <div class="stat-icon amber"><i class="bi bi-folder2-open"></i></div>
+        <div class="stat-label">My Active Cases</div>
+        <div class="stat-value counter" data-target="@Model.ActiveCases">0</div>
+    </div>
+    <div class="glass-card stat-card">
+        <div class="stat-icon blue"><i class="bi bi-hourglass-split"></i></div>
+        <div class="stat-label">Pending Approval</div>
+        <div class="stat-value counter" data-target="@Model.PendingFIRs">0</div>
+    </div>
+    <div class="glass-card stat-card">
+        <div class="stat-icon red"><i class="bi bi-check2-circle"></i></div>
+        <div class="stat-label">My Closed Cases</div>
+        <div class="stat-value counter" data-target="@Model.ClosedCases">0</div>
+    </div>
+</div>
+
+<div class="dash-grid">
+    <div class="glass-card table-card" style="grid-column: 1 / -1;">
+        <div class="card-header-row">
+            <h3>Recent FIRs</h3>
+            <a asp-controller="FIR" asp-action="Create" class="link-amber">+ New FIR</a>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr><th>Case ID</th><th>Citizen</th><th>Crime</th><th>District</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                @foreach (var fir in Model.RecentFIRs)
+                {
+                    <tr>
+                        <td><span class="badge-num">@fir.CaseId</span></td>
+                        <td>@fir.CitizenName</td>
+                        <td>@fir.CrimeType</td>
+                        <td>@fir.District</td>
+                        <td><span class="status-badge @fir.Status.ToLower()">@fir.Status</span></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    initCounters();
+</script>
+}
