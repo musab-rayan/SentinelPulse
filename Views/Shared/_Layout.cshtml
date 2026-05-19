@@ -12,67 +12,52 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
-@{
-    var officerName = Context.Session.GetString("OfficerName");
-    var officerBadge = Context.Session.GetString("OfficerBadge");
-    var officerRole = Context.Session.GetString("OfficerRole");
-    var isLoggedIn = !string.IsNullOrEmpty(officerName);
-}
-
-@if (isLoggedIn)
+@if (!string.IsNullOrEmpty(Context.Session.GetString("OfficerName")))
 {
-    <div id="emergency-banner" class="emergency-banner">
-        <i class="bi bi-exclamation-triangle-fill"></i>
-        <span id="banner-text">No active alerts</span>
-        <button class="banner-close" onclick="document.getElementById('emergency-banner').classList.remove('show')">&times;</button>
-    </div>
+    <nav class="top-nav">
+        <div class="nav-container">
+            <a href="/Dashboard/Index" class="nav-brand">
+                <div class="brand-logo-sm"><i class="bi bi-shield-fill-check"></i></div>
+                <span class="brand-text">SentinelPulse</span>
+            </a>
 
-    <div class="app-shell">
-        <aside class="sidebar" id="sidebar">
-            <div class="brand">
-                <div class="brand-logo"><i class="bi bi-shield-shaded"></i></div>
-                <div>
-                    <div class="brand-name">SentinelPulse</div>
-                    <div class="brand-sub">Law Enforcement Portal</div>
-                </div>
-            </div>
-            <nav class="nav-list">
-                <a asp-controller="Dashboard" asp-action="Index" class="nav-item"><i class="bi bi-speedometer2"></i> Dashboard</a>
-                <a asp-controller="FIR" asp-action="Index" class="nav-item"><i class="bi bi-file-earmark-plus"></i> FIR Registration</a>
-                <a asp-controller="Cases" asp-action="Index" class="nav-item"><i class="bi bi-folder2-open"></i> Cases</a>
+            <div class="nav-links">
+                <a href="/Dashboard/Index" class="nav-link">Dashboard</a>
+                <a href="/FIR/Index" class="nav-link">FIR</a>
+                <a href="/Cases/Index" class="nav-link">Cases</a>
+                <a href="/Dashboard/ZainabAlert" class="nav-link nav-link-danger">Zainab Alert</a>
+                <a href="/Dashboard/CrimeMap" class="nav-link">Crime Map</a>
                 @if (Context.Session.GetString("OfficerRole") == "Admin")
                 {
-                    <a class="nav-item" href="/Dashboard/Officers"><i class="bi bi-people"></i> Officers</a>
-                    <a class="nav-item" href="/Dashboard/CrimeMap"><i class="bi bi-geo-alt"></i> Crime Map</a>
+                    <a href="/Dashboard/Officers" class="nav-link">Officers</a>
                 }
-            </nav>
-            <div class="sidebar-footer">
-                <a asp-controller="Account" asp-action="Logout" class="nav-item"><i class="bi bi-box-arrow-right"></i> Logout</a>
             </div>
-        </aside>
 
-        <div class="main-area">
-            <header class="topbar">
-                <button class="icon-btn d-md-none" id="sidebar-toggle"><i class="bi bi-list"></i></button>
-                <div class="clock" id="live-clock">--:--:--</div>
-                <div class="topbar-right">
-                    <button class="icon-btn alert-btn" id="alert-bell" title="Broadcast Emergency"><i class="bi bi-bell-fill"></i></button>
-                    <button class="icon-btn" id="theme-toggle" title="Toggle theme"><i class="bi bi-moon-stars-fill"></i></button>
-                    <div class="officer-chip">
-                        <div class="officer-avatar">@(officerName?[0])</div>
-                        <div class="officer-info">
-                            <div class="officer-name">@officerName</div>
-                            <div class="officer-meta"><span class="badge-num">@officerBadge</span> · @officerRole</div>
-                        </div>
+            <div class="nav-right">
+                <span class="clock-small" id="live-clock"></span>
+                <button id="alert-bell" class="icon-btn alert-btn" type="button" title="Broadcast Emergency"><i class="bi bi-bell-fill"></i></button>
+                <button id="theme-toggle" class="icon-btn" type="button" title="Toggle theme"><i class="bi bi-moon-stars-fill"></i></button>
+                <div class="officer-chip-top">
+                    <div class="officer-avatar-sm">@Context.Session.GetString("OfficerName")?[0]</div>
+                    <div class="officer-info-sm">
+                        <div class="officer-name-sm">@Context.Session.GetString("OfficerName")</div>
+                        <div class="officer-meta-sm">@Context.Session.GetString("OfficerBadge") · @Context.Session.GetString("OfficerRole")</div>
                     </div>
+                    <a href="/Account/Logout" class="logout-btn" title="Logout"><i class="bi bi-box-arrow-right"></i></a>
                 </div>
-            </header>
-
-            <main class="content">
-                @RenderBody()
-            </main>
+            </div>
         </div>
+    </nav>
+
+    <div id="emergency-banner" class="emergency-banner">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span id="banner-text"></span>
+        <button class="banner-close" type="button" onclick="document.getElementById('emergency-banner').classList.remove('show')">×</button>
     </div>
+
+    <main class="main-content">
+        @RenderBody()
+    </main>
 }
 else
 {
@@ -82,5 +67,6 @@ else
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="~/js/site.js" asp-append-version="true"></script>
 @await RenderSectionAsync("Scripts", required: false)
+@await RenderSectionAsync("PrintArea", required: false)
 </body>
 </html>

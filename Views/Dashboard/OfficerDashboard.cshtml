@@ -26,6 +26,38 @@
     </div>
 </div>
 
+@{
+    var zainabAlerts = ViewBag.ActiveZainabAlerts as List<SentinelPulse.Models.MissingChildModel>;
+}
+@if (zainabAlerts != null && zainabAlerts.Any())
+{
+    <div class="glass-card" style="padding:20px;margin-bottom:24px;border-left:3px solid var(--danger);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <div>
+                <h3 style="margin:0;color:var(--danger);"><i class="bi bi-exclamation-triangle-fill"></i> Active Zainab Alerts</h3>
+                <span class="text-muted-warm">@zainabAlerts.Count active missing child @(zainabAlerts.Count == 1 ? "alert" : "alerts")</span>
+            </div>
+            <a href="/Dashboard/ZainabAlert" class="link-amber">View All →</a>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;">
+            @foreach (var alert in zainabAlerts)
+            {
+                <a href="/Dashboard/ZainabAlertDetails/@alert.AlertId" style="text-decoration:none;color:inherit;">
+                    <div style="padding:14px;border:1px solid var(--border);border-radius:10px;transition:all 0.15s;background:var(--surface);" onmouseover="this.style.borderColor='var(--border-strong)';this.style.boxShadow='var(--shadow-md)';" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none';">
+                        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px;">
+                            <span class="badge-num">ZA-@alert.AlertId.ToString("D3")</span>
+                            <span class="status-badge emergency">@alert.Status</span>
+                        </div>
+                        <div style="font-weight:600;font-size:0.95rem;margin-bottom:4px;">@alert.ChildName</div>
+                        <div class="text-muted-warm">Age @alert.Age · @alert.Gender · @alert.LastSeenLocation</div>
+                        <div class="text-muted-warm" style="margin-top:6px;font-size:0.72rem;">@alert.ReportedDate.ToString("dd MMM HH:mm")</div>
+                    </div>
+                </a>
+            }
+        </div>
+    </div>
+}
+
 <div class="dash-grid">
     <div class="glass-card table-card" style="grid-column: 1 / -1;">
         <div class="card-header-row">

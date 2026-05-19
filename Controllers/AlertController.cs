@@ -17,6 +17,7 @@ namespace SentinelPulse.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult Send([FromBody] AlertModel model)
         {
             if (string.IsNullOrEmpty(HttpContext.Session.GetString("OfficerName")))

@@ -75,7 +75,7 @@
         <table class="data-table" id="cases-table">
             <thead>
                 <tr>
-                    <th>Case ID</th><th>Title</th><th>Assigned Officer</th>
+                    <th>Case ID</th><th>Title</th><th>Complainant</th><th>Assigned Officer</th>
                     <th>Priority</th><th>Status</th><th>Last Updated</th><th></th>
                 </tr>
             </thead>
@@ -86,6 +86,11 @@
                     <tr class="case-row" data-case='@System.Text.Json.JsonSerializer.Serialize(c)'>
                         <td><span class="badge-num">@c.CaseId</span></td>
                         <td>@c.Title</td>
+                        @{
+                            var complainants = ViewBag.Complainants as Dictionary<string, string>;
+                            var complainant = complainants != null && complainants.ContainsKey(c.CaseId) ? complainants[c.CaseId] : "—";
+                        }
+                        <td>@complainant</td>
                         <td>@c.AssignedOfficer</td>
                         <td><span class="prio-dot @dot"></span> @c.Priority</td>
                         <td><span class="status-badge @c.Status.ToLower().Replace(" ", "-")">@c.Status</span></td>

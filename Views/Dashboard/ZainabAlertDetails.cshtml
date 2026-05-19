@@ -1,0 +1,408 @@
+﻿@model SentinelPulse.Models.MissingChildModel
+@{ ViewData["Title"] = $"Zainab Alert ZA-{Model.AlertId}"; }
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title" style="color:var(--danger)"><i class="bi bi-exclamation-triangle-fill"></i> Zainab Alert: @Model.ChildName</h1>
+        <p class="page-sub"><span class="badge-num">ZA-@Model.AlertId</span> Â· Reported by @Model.ReportedBy</p>
+    </div>
+    <a asp-action="ZainabAlert" class="btn-ghost"><i class="bi bi-arrow-left"></i> Back</a>
+</div>
+
+<div style="margin-bottom:20px;">
+    <button onclick="window.print()" class="btn-primary-amber no-print" style="width:auto;padding:8px 24px;">
+        <i class="bi bi-printer"></i> Print Alert Report
+    </button>
+</div>
+
+<div class="dash-grid">
+    <div class="glass-card">
+        <h3>Child Information</h3>
+        <div class="kv"><label>Name</label><div style="color:var(--danger);font-weight:600">@Model.ChildName</div></div>
+        <div class="kv"><label>Age</label><div>@Model.Age</div></div>
+        <div class="kv"><label>Gender</label><div>@Model.Gender</div></div>
+        <div class="kv"><label>Description</label><div>@Model.Description</div></div>
+    </div>
+
+    <div class="glass-card">
+        <h3>Alert Details</h3>
+        <div class="kv"><label>Status</label><div><span style="color:var(--danger);font-weight:600">@Model.Status</span></div></div>
+        <div class="kv"><label>Priority</label><div>@Model.Priority</div></div>
+        <div class="kv"><label>Last Seen</label><div>@Model.LastSeenLocation</div></div>
+        <div class="kv"><label>District</label><div>@Model.LastSeenDistrict</div></div>
+        <div class="kv"><label>Reported Date</label><div>@Model.ReportedDate.ToString("dd MMM yyyy HH:mm")</div></div>
+        @if (!string.IsNullOrEmpty(Model.AssignedOfficer))
+        {
+            <div class="kv"><label>Assigned Officer</label><div>@Model.AssignedOfficer</div></div>
+        }
+    </div>
+</div>
+
+<div class="glass-card" style="margin-top:1.5rem;">
+    <h3>Guardian Information</h3>
+    <div class="kv"><label>Guardian Name</label><div>@Model.GuardianName</div></div>
+    <div class="kv"><label>Guardian CNIC</label><div>@Model.GuardianCNIC</div></div>
+    <div class="kv"><label>Guardian Phone</label><div>@Model.GuardianPhone</div></div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.UpdateNotes))
+{
+    <div class="glass-card" style="margin-top:1.5rem;">
+        <h3><i class="bi bi-journal-text"></i> Update Notes</h3>
+        <p style="white-space:pre-wrap; margin:0.75rem 0 0;">@Model.UpdateNotes</p>
+    </div>
+}
+
+<div class="glass-card" style="padding:24px;margin-top:20px;">
+    <h3 style="margin-bottom:16px;">Evidence Locker</h3>
+    @{
+        var evidence = ViewBag.Evidence as List<SentinelPulse.Models.EvidenceModel>;
+    }
+    @if (evidence != null && evidence.Any())
+    {
+        <table class="data-table">
+            <thead><tr><th>Type</th><th>Description</th><th>Collected By</th><th>Date</th></tr></thead>
+            <tbody>
+                @foreach (var e in evidence)
+                {
+                    <tr>
+                        <td>@e.Type</td>
+                        <td>@e.Description</td>
+                        <td>@e.CollectedBy</td>
+                        <td>@e.CollectedDate.ToString("dd MMM yyyy HH:mm")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p style="color:var(--muted);margin:.75rem 0 1.5rem;">No evidence logged yet.</p>
+    }
+    <form method="post" asp-controller="Evidence" asp-action="Add" style="margin-top:16px;">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="CaseId" value="@Model.AlertId" />
+        <input type="hidden" name="ReturnToAlert" value="true" />
+        <div class="form-row">
+            <div class="form-group">
+                <label>Type</label>
+                <select name="Type" class="form-control-warm">
+                    <option>Physical</option><option>Digital</option><option>Document</option>
+                    <option>Forensic</option><option>Witness Statement</option><option>CCTV Footage</option><option>Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea name="Description" class="form-control-warm" rows="2" required></textarea>
+            </div>
+        </div>
+        <button type="submit" class="btn-primary-amber" style="width:auto;padding:8px 24px;">Add Evidence</button>
+    </form>
+</div>
+
+<div class="glass-card" style="padding:24px;margin-top:20px;">
+    <h3 style="margin-bottom:16px;">Suspects</h3>
+    @{
+        var suspects = ViewBag.Suspects as List<SentinelPulse.Models.SuspectModel>;
+    }
+    @if (suspects != null && suspects.Any())
+    {
+        foreach (var s in suspects)
+        {
+            <div class="kv" style="padding:12px 0;">
+                <div><strong>@s.Name</strong> @(s.CNIC != null ? "— CNIC: " + s.CNIC : "")</div>
+                <div class="text-muted-warm">@s.Description</div>
+                <div class="text-muted-warm">Added: @s.AddedDate.ToString("dd MMM yyyy")</div>
+            </div>
+        }
+    }
+    else
+    {
+        <p style="color:var(--muted);margin:.75rem 0 1.5rem;">No suspects on record yet.</p>
+    }
+    <form method="post" asp-controller="Suspects" asp-action="Add" style="margin-top:16px;">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="CaseId" value="@Model.AlertId" />
+        <input type="hidden" name="ReturnToAlert" value="true" />
+        <div class="form-row">
+            <div class="form-group">
+                <label>Suspect Name</label>
+                <input type="text" name="Name" class="form-control-warm" required />
+            </div>
+            <div class="form-group">
+                <label>CNIC (optional)</label>
+                <input type="text" name="CNIC" class="form-control-warm" placeholder="00000-0000000-0" />
+            </div>
+        </div>
+        <div class="form-group" style="margin-bottom:12px;">
+            <label>Description</label>
+            <textarea name="Description" class="form-control-warm" rows="2"></textarea>
+        </div>
+        <button type="submit" class="btn-primary-amber" style="width:auto;padding:8px 24px;">Add Suspect</button>
+    </form>
+</div>
+
+@if (Model.Status != "Found Safe" && Model.Status != "Found Deceased" && Model.Status != "Closed")
+{
+    <div class="glass-card" style="padding:20px;margin-top:20px;">
+        <h3 style="margin-bottom:16px;">Update Alert Status</h3>
+        <form method="post" asp-controller="Dashboard" asp-action="UpdateZainabAlert" asp-route-id="@Model.AlertId">
+            @Html.AntiForgeryToken()
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+                <div>
+                    <label style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;display:block;margin-bottom:6px;">Update Status</label>
+                    <select name="status" class="form-control-warm" required>
+                        <option value="Active Search">Active Search</option>
+                        <option value="Found Safe">Found Safe</option>
+                        <option value="Found Deceased">Found Deceased</option>
+                        @if (Context.Session.GetString("OfficerRole") == "Admin")
+                        {
+                            <option value="Closed">Close Alert</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;display:block;margin-bottom:6px;">Update Time</label>
+                    <input type="text" class="form-control-warm" value="@DateTime.Now.ToString("dd MMM yyyy HH:mm")" disabled />
+                </div>
+            </div>
+            <div style="margin-bottom:14px;">
+                <label style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;display:block;margin-bottom:6px;">Update Notes</label>
+                <textarea name="notes" class="form-control-warm" rows="3" placeholder="e.g. Child recovered safely from the location, taken to PIMS Hospital for checkup. Guardian informed."></textarea>
+            </div>
+            <button type="submit" class="btn-primary-amber">Submit Update</button>
+        </form>
+    </div>
+}
+else
+{
+    <div class="glass-card" style="padding:20px;margin-top:20px;text-align:center;">
+        <div style="font-size:1.5rem;margin-bottom:6px;">
+            @if (Model.Status == "Found Safe") { <span style="color:var(--success);"><i class="bi bi-check-circle-fill"></i></span> }
+            else if (Model.Status == "Found Deceased") { <span style="color:var(--danger);"><i class="bi bi-x-circle-fill"></i></span> }
+            else { <span style="color:var(--muted);"><i class="bi bi-archive-fill"></i></span> }
+        </div>
+        <h3 style="margin:0;">This alert is @Model.Status</h3>
+        <p class="text-muted-warm" style="margin-top:4px;">No further updates can be made to this alert.</p>
+    </div>
+}
+
+@section PrintArea {
+<div class="print-only-report" id="printReport">
+    <div style="font-family: 'Times New Roman', serif; color: #000; padding: 20px;">
+
+        <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+            <tr>
+                <td style="width:60%;vertical-align:top;">
+                    <div style="font-size:22pt;font-weight:bold;margin:0;">SentinelPulse</div>
+                    <div style="font-size:9pt;color:#444;margin-top:2px;">Law Enforcement Operations Portal</div>
+                    <div style="font-size:9pt;color:#444;">Islamabad Police — Operations Division</div>
+                </td>
+                <td style="width:40%;text-align:right;vertical-align:top;">
+                    <div style="font-size:11pt;font-weight:bold;border:2px solid #000;padding:6px 10px;display:inline-block;">OFFICIAL ZAINAB ALERT REPORT</div>
+                    <div style="font-size:9pt;margin-top:6px;">Printed: @DateTime.Now.ToString("dd MMM yyyy HH:mm")</div>
+                    <div style="font-size:9pt;">Ref: ZA-@Model.AlertId</div>
+                </td>
+            </tr>
+        </table>
+
+        <div style="border-top:3px double #000;border-bottom:1px solid #000;text-align:center;padding:8px 0;margin-bottom:18px;">
+            <div style="font-size:14pt;font-weight:bold;letter-spacing:2px;">MISSING CHILD ALERT REPORT</div>
+            <div style="font-size:9pt;font-style:italic;">Confidential — For Official Use Only</div>
+        </div>
+
+        <div style="font-size:11pt;font-weight:bold;background:#000;color:#fff;padding:4px 10px;margin-bottom:0;">SECTION 1 — ALERT OVERVIEW</div>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:10pt;">
+            <tr>
+                <td style="padding:8px 10px;border:1px solid #000;width:25%;background:#f5f5f5;font-weight:bold;">Alert ID</td>
+                <td style="padding:8px 10px;border:1px solid #000;width:25%;font-family:'Courier New',monospace;">ZA-@Model.AlertId</td>
+                <td style="padding:8px 10px;border:1px solid #000;width:25%;background:#f5f5f5;font-weight:bold;">Status</td>
+                <td style="padding:8px 10px;border:1px solid #000;width:25%;">@Model.Status</td>
+            </tr>
+            <tr>
+                <td style="padding:8px 10px;border:1px solid #000;background:#f5f5f5;font-weight:bold;">Priority</td>
+                <td style="padding:8px 10px;border:1px solid #000;">@Model.Priority</td>
+                <td style="padding:8px 10px;border:1px solid #000;background:#f5f5f5;font-weight:bold;">Reported Date</td>
+                <td style="padding:8px 10px;border:1px solid #000;">@Model.ReportedDate.ToString("dd MMM yyyy HH:mm")</td>
+            </tr>
+            <tr>
+                <td style="padding:8px 10px;border:1px solid #000;background:#f5f5f5;font-weight:bold;">Reported By</td>
+                <td style="padding:8px 10px;border:1px solid #000;">@Model.ReportedBy</td>
+                <td style="padding:8px 10px;border:1px solid #000;background:#f5f5f5;font-weight:bold;">Assigned Officer</td>
+                <td style="padding:8px 10px;border:1px solid #000;">@(Model.AssignedOfficer ?? "—")</td>
+            </tr>
+        </table>
+
+        <div style="font-size:11pt;font-weight:bold;background:#000;color:#fff;padding:4px 10px;margin-bottom:0;">SECTION 2 — CHILD INFORMATION</div>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:10pt;">
+            <tr>
+                <td style="padding:8px 10px;border:1px solid #000;width:25%;background:#f5f5f5;font-weight:bold;">Name</td>
+                <td style="padding:8px 10px;border:1px solid #000;width:25%;font-weight:bold;">@Model.ChildName</td>
+                <td style="padding:8px 10px;border:1px solid #000;width:25%;background:#f5f5f5;font-weight:bold;">Age</td>
+                <td style="padding:8px 10px;border:1px solid #000;width:25%;">@Model.Age</td>
+            </tr>
+            <tr>
+                <td style="padding:8px 10px;border:1px solid #000;background:#f5f5f5;font-weight:bold;">Gender</td>
+                <td style="padding:8px 10px;border:1px solid #000;">@Model.Gender</td>
+                <td style="padding:8px 10px;border:1px solid #000;background:#f5f5f5;font-weight:bold;">Description</td>
+                <td style="padding:8px 10px;border:1px solid #000;">@Model.Description</td>
+            </tr>
+        </table>
+
+        <div style="font-size:11pt;font-weight:bold;background:#000;color:#fff;padding:4px 10px;margin-bottom:0;">SECTION 3 — GUARDIAN INFORMATION</div>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:10pt;">
+            <tr>
+                <td style="padding:8px 10px;border:1px solid #000;width:25%;background:#f5f5f5;font-weight:bold;">Name</td>
+                <td style="padding:8px 10px;border:1px solid #000;width:25%;">@Model.GuardianName</td>
+                <td style="padding:8px 10px;border:1px solid #000;width:25%;background:#f5f5f5;font-weight:bold;">CNIC</td>
+                <td style="padding:8px 10px;border:1px solid #000;width:25%;font-family:'Courier New',monospace;">@Model.GuardianCNIC</td>
+            </tr>
+            <tr>
+                <td style="padding:8px 10px;border:1px solid #000;background:#f5f5f5;font-weight:bold;">Phone</td>
+                <td colspan="3" style="padding:8px 10px;border:1px solid #000;">@Model.GuardianPhone</td>
+            </tr>
+        </table>
+
+        <div style="font-size:11pt;font-weight:bold;background:#000;color:#fff;padding:4px 10px;margin-bottom:0;">SECTION 4 — LAST SEEN DETAILS</div>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:10pt;">
+            <tr>
+                <td style="padding:8px 10px;border:1px solid #000;width:25%;background:#f5f5f5;font-weight:bold;">Location</td>
+                <td style="padding:8px 10px;border:1px solid #000;width:25%;">@Model.LastSeenLocation</td>
+                <td style="padding:8px 10px;border:1px solid #000;width:25%;background:#f5f5f5;font-weight:bold;">District</td>
+                <td style="padding:8px 10px;border:1px solid #000;width:25%;">@Model.LastSeenDistrict</td>
+            </tr>
+            <tr>
+                <td style="padding:8px 10px;border:1px solid #000;background:#f5f5f5;font-weight:bold;">Latitude</td>
+                <td style="padding:8px 10px;border:1px solid #000;font-family:'Courier New',monospace;">@(Model.Latitude?.ToString("F6") ?? "—")</td>
+                <td style="padding:8px 10px;border:1px solid #000;background:#f5f5f5;font-weight:bold;">Longitude</td>
+                <td style="padding:8px 10px;border:1px solid #000;font-family:'Courier New',monospace;">@(Model.Longitude?.ToString("F6") ?? "—")</td>
+            </tr>
+            <tr>
+                <td style="padding:8px 10px;border:1px solid #000;background:#f5f5f5;font-weight:bold;">Description</td>
+                <td colspan="3" style="padding:8px 10px;border:1px solid #000;">@Model.Description</td>
+            </tr>
+        </table>
+
+        <div style="font-size:11pt;font-weight:bold;background:#000;color:#fff;padding:4px 10px;margin-bottom:0;">SECTION 5 — UPDATE HISTORY</div>
+        <div style="border:1px solid #000;padding:12px;margin-bottom:16px;min-height:80px;font-size:10pt;line-height:1.6;white-space:pre-wrap;">@(string.IsNullOrEmpty(Model.UpdateNotes) ? "No update notes recorded." : Model.UpdateNotes)</div>
+
+        @if (evidence != null && evidence.Any())
+        {
+            <div style="font-size:11pt;font-weight:bold;background:#000;color:#fff;padding:4px 10px;margin-bottom:0;">SECTION 6 — EVIDENCE LOG</div>
+            <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:9.5pt;">
+                <thead>
+                    <tr style="background:#e5e5e5;">
+                        <th style="padding:6px 8px;border:1px solid #000;text-align:left;">#</th>
+                        <th style="padding:6px 8px;border:1px solid #000;text-align:left;">Type</th>
+                        <th style="padding:6px 8px;border:1px solid #000;text-align:left;">Description</th>
+                        <th style="padding:6px 8px;border:1px solid #000;text-align:left;">Collected By</th>
+                        <th style="padding:6px 8px;border:1px solid #000;text-align:left;">Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ int evIdx = 1; }
+                    @foreach (var e in evidence)
+                    {
+                        <tr>
+                            <td style="padding:6px 8px;border:1px solid #000;">@(evIdx++)</td>
+                            <td style="padding:6px 8px;border:1px solid #000;">@e.Type</td>
+                            <td style="padding:6px 8px;border:1px solid #000;">@e.Description</td>
+                            <td style="padding:6px 8px;border:1px solid #000;">@e.CollectedBy</td>
+                            <td style="padding:6px 8px;border:1px solid #000;">@e.CollectedDate.ToString("dd MMM yyyy")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        @if (suspects != null && suspects.Any())
+        {
+            <div style="font-size:11pt;font-weight:bold;background:#000;color:#fff;padding:4px 10px;margin-bottom:0;">SECTION 7 — SUSPECTS</div>
+            <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:9.5pt;">
+                <thead>
+                    <tr style="background:#e5e5e5;">
+                        <th style="padding:6px 8px;border:1px solid #000;text-align:left;">#</th>
+                        <th style="padding:6px 8px;border:1px solid #000;text-align:left;">Name</th>
+                        <th style="padding:6px 8px;border:1px solid #000;text-align:left;">CNIC</th>
+                        <th style="padding:6px 8px;border:1px solid #000;text-align:left;">Description</th>
+                        <th style="padding:6px 8px;border:1px solid #000;text-align:left;">Added</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ int spIdx = 1; }
+                    @foreach (var s in suspects)
+                    {
+                        <tr>
+                            <td style="padding:6px 8px;border:1px solid #000;">@(spIdx++)</td>
+                            <td style="padding:6px 8px;border:1px solid #000;">@s.Name</td>
+                            <td style="padding:6px 8px;border:1px solid #000;font-family:'Courier New',monospace;">@(s.CNIC ?? "—")</td>
+                            <td style="padding:6px 8px;border:1px solid #000;">@s.Description</td>
+                            <td style="padding:6px 8px;border:1px solid #000;">@s.AddedDate.ToString("dd MMM yyyy")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        <table style="width:100%;margin-top:50px;border-collapse:collapse;">
+            <tr>
+                <td style="width:45%;text-align:center;font-size:10pt;">
+                    <div style="border-top:1px solid #000;padding-top:6px;width:80%;margin:0 auto;">
+                        Investigating Officer
+                    </div>
+                </td>
+                <td style="width:10%;"></td>
+                <td style="width:45%;text-align:center;font-size:10pt;">
+                    <div style="border-top:1px solid #000;padding-top:6px;width:80%;margin:0 auto;">
+                        DSP — Signature & Official Stamp
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <div style="text-align:center;margin-top:40px;padding-top:8px;border-top:1px solid #999;font-size:8pt;color:#666;">
+            This is a system-generated document from SentinelPulse Law Enforcement Operations Portal.<br>
+            Document classified as CONFIDENTIAL. Unauthorized distribution is prohibited.
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Hide print report on screen */
+    .print-only-report { display: none; }
+
+    @@media print {
+        /* Hide everything */
+        body > * { display: none !important; }
+
+        /* Show only the print report */
+        body > .print-only-report,
+        .print-only-report {
+            display: block !important;
+            position: static !important;
+            width: 100% !important;
+            background: white !important;
+            color: #000 !important;
+            font-family: 'Times New Roman', serif !important;
+        }
+
+        .print-only-report * {
+            color: #000 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            visibility: visible !important;
+        }
+
+        /* Force backgrounds */
+        .print-only-report [style*="background:#000"] {
+            background: #000 !important;
+            color: #fff !important;
+        }
+        .print-only-report [style*="background:#000"] * { color: #fff !important; }
+        .print-only-report [style*="background:#f5f5f5"] { background: #f5f5f5 !important; }
+        .print-only-report [style*="background:#e5e5e5"] { background: #e5e5e5 !important; }
+
+        @@page { margin: 1.2cm; size: A4; }
+    }
+</style>
+}

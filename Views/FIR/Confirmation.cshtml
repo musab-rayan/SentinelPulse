@@ -5,6 +5,12 @@
     <div>
         <h1 class="page-title">FIR Successfully Registered</h1>
         <p class="page-sub">Case ID: <span class="badge-num">@Model.CaseId</span></p>
+        @if (!string.IsNullOrEmpty(Model.SentimentLabel))
+        {
+            <span class="status-badge @(Model.SentimentLabel == "Critical" ? "emergency" : Model.SentimentLabel == "Concerning" ? "investigation" : "open")" style="margin-top:8px;display:inline-block;">
+                Urgency: @Model.SentimentLabel (@Model.SentimentScore)
+            </span>
+        }
     </div>
     <div>
         <button onclick="window.print()" class="btn-primary-amber"><i class="bi bi-printer"></i> Print FIR</button>

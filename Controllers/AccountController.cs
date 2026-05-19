@@ -22,7 +22,7 @@ public class AccountController : Controller
 
         if (officer == null)
         {
-            ModelState.AddModelError("", "Invalid credentials");
+            ViewBag.Error = "Invalid badge number or password.";
             return View(model);
         }
 

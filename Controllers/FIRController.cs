@@ -65,15 +65,17 @@ namespace SentinelPulse.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(FIRModel model)
+        public async Task<IActionResult> Create(FIRModel model, bool forceSubmit = false)
         {
             if (!ModelState.IsValid) return View(model);
 
-            // CNIC duplicate check
-            var existingFIR = _db.FIRs.FirstOrDefault(f => f.CitizenCNIC == model.CitizenCNIC && f.Status != "Closed");
-            if (existingFIR != null)
+            // CNIC duplicate check — block first attempt
+            var duplicate = _db.FIRs.FirstOrDefault(f => f.CitizenCNIC == model.CitizenCNIC && f.Status != "Closed");
+            if (duplicate != null && !forceSubmit)
             {
-                ViewBag.CNICWarning = $"Warning: This CNIC already has an active case ({existingFIR.CaseId} — {existingFIR.CrimeType}). Proceeding anyway.";
+                ViewBag.CNICWarning = $"An active FIR ({duplicate.CaseId}) already exists for this CNIC. Click 'Submit Anyway' to file another.";
+                ViewBag.AllowForce = true;
+                return View(model);
             }
 
             // Auto priority based on crime type
@@ -110,6 +112,17 @@ namespace SentinelPulse.Controllers
                 }
                 catch { /* geocoding failed, continue without coords */ }
             }
+
+            var desc = (model.Description ?? "").ToLower();
+            var urgentWords = new[] { "murder", "killed", "death", "stabbed", "shot", "blood", "weapon", "gun", "knife", "hostage", "kidnap", "bomb", "attack", "assault", "rape", "threat", "emergency", "critical", "severe", "violent", "abducted" };
+            var moderateWords = new[] { "theft", "stolen", "robbery", "fraud", "damage", "vandalism", "harassment", "drugs", "fight", "injured", "missing" };
+            var urgentCount = urgentWords.Count(w => desc.Contains(w));
+            var moderateCount = moderateWords.Count(w => desc.Contains(w));
+
+            if (urgentCount >= 2) { model.SentimentLabel = "Critical"; model.SentimentScore = "High Urgency"; }
+            else if (urgentCount == 1 || moderateCount >= 2) { model.SentimentLabel = "Concerning"; model.SentimentScore = "Medium Urgency"; }
+            else if (moderateCount == 1) { model.SentimentLabel = "Standard"; model.SentimentScore = "Low Urgency"; }
+            else { model.SentimentLabel = "Routine"; model.SentimentScore = "Minimal Urgency"; }
 
             _db.FIRs.Add(model);
 

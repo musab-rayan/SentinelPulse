@@ -1,0 +1,138 @@
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+@{ ViewData["Title"] = "Zainab Alert"; }
+@using SentinelPulse.Models
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title" style="color:var(--danger)"><i class="bi bi-exclamation-triangle-fill"></i> Zainab Alert</h1>
+        <p class="page-sub">Report a missing child — all stations will be notified immediately</p>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert" style="background:var(--danger-soft);border:1px solid var(--danger);color:var(--danger);padding:1rem;border-radius:8px;margin-bottom:1rem">
+        <i class="bi bi-check-circle-fill"></i> @TempData["Success"]
+    </div>
+}
+
+<div class="glass-card" style="padding:2rem;margin-bottom:2rem">
+    <h3 style="color:var(--amber);margin-bottom:1.5rem">File New Alert</h3>
+    <form asp-action="ZainabAlert" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="LastSeenDistrict" value="Islamabad" />
+        <div class="form-row">
+            <div class="form-group">
+                <label>Child Name</label>
+                <input name="ChildName" class="form-control-warm" required />
+            </div>
+            <div class="form-group">
+                <label>Age</label>
+                <input name="Age" type="number" class="form-control-warm" required />
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Gender</label>
+                <select name="Gender" class="form-control-warm">
+                    <option>Male</option>
+                    <option>Female</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Last Seen Location</label>
+                <input name="LastSeenLocation" class="form-control-warm" required />
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Guardian Name</label>
+                <input name="GuardianName" class="form-control-warm" required />
+            </div>
+            <div class="form-group">
+                <label>Guardian Phone</label>
+                <input name="GuardianPhone" class="form-control-warm" required />
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Guardian CNIC</label>
+            <input name="GuardianCNIC" class="form-control-warm" placeholder="00000-0000000-0" />
+        </div>
+        <div class="form-group">
+            <label>Description / Identifying Features</label>
+            <textarea name="Description" class="form-control-warm" rows="3"></textarea>
+        </div>
+
+        <div class="form-group" style="margin-top:1rem">
+            <label>Last Seen Location — Pin on Map (optional)</label>
+            <div id="zainabMap" style="height:280px;border-radius:12px;margin-top:8px;border:1px solid var(--border);"></div>
+            <div id="z-coords" style="font-size:0.85rem;color:var(--muted);margin-top:6px;"></div>
+        </div>
+        <input type="hidden" name="Latitude" id="z-lat" />
+        <input type="hidden" name="Longitude" id="z-lng" />
+
+        <button type="submit" class="btn-primary-amber" style="background:var(--danger);border-color:var(--danger);margin-top:1rem">
+            <i class="bi bi-broadcast"></i> File Alert &amp; Notify All Stations
+        </button>
+    </form>
+</div>
+
+@if (ViewBag.ActiveAlerts != null && ((List<MissingChildModel>)ViewBag.ActiveAlerts).Count > 0)
+{
+    <div class="glass-card" style="padding:2rem">
+        <h3 style="color:var(--amber);margin-bottom:1rem">Active Alerts</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th><th>Child Name</th><th>Age</th><th>Gender</th>
+                    <th>Last Seen</th><th>Reported By</th><th>Date</th><th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var a in (List<MissingChildModel>)ViewBag.ActiveAlerts)
+                {
+                    <tr onclick="window.location='/Dashboard/ZainabAlertDetails/@a.AlertId'" style="cursor:pointer;" title="Click to view details">
+                        <td><a href="/Dashboard/ZainabAlertDetails/@a.AlertId" class="link-amber" style="text-decoration:none;"><strong>ZA-@a.AlertId</strong></a></td>
+                        <td style="color:var(--danger);font-weight:600">@a.ChildName</td>
+                        <td>@a.Age</td>
+                        <td>@a.Gender</td>
+                        <td>@a.LastSeenLocation</td>
+                        <td>@a.ReportedBy</td>
+                        <td>@a.ReportedDate.ToString("dd MMM yyyy HH:mm")</td>
+                        <td><span style="color:var(--danger);font-weight:600">@a.Status</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@section Scripts {
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    var zMap = L.map('zainabMap').setView([33.6844, 73.0479], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(zMap);
+
+    var zMarker = null;
+    zMap.on('click', function(e) {
+        var lat = e.latlng.lat.toFixed(6);
+        var lng = e.latlng.lng.toFixed(6);
+        document.getElementById('z-lat').value = lat;
+        document.getElementById('z-lng').value = lng;
+        document.getElementById('z-coords').textContent = 'Pinned: ' + lat + ', ' + lng;
+        if (zMarker) zMarker.setLatLng(e.latlng);
+        else {
+            zMarker = L.marker(e.latlng, { draggable: true }).addTo(zMap);
+            zMarker.on('dragend', function(ev) {
+                var pos = ev.target.getLatLng();
+                document.getElementById('z-lat').value = pos.lat.toFixed(6);
+                document.getElementById('z-lng').value = pos.lng.toFixed(6);
+                document.getElementById('z-coords').textContent = 'Pinned: ' + pos.lat.toFixed(6) + ', ' + pos.lng.toFixed(6);
+            });
+        }
+    });
+</script>
+}

@@ -9,7 +9,8 @@ namespace SentinelPulse.Controllers
         public EvidenceController(AppDbContext db) { _db = db; }
 
         [HttpPost]
-        public IActionResult Add(EvidenceModel model)
+        [ValidateAntiForgeryToken]
+        public IActionResult Add(EvidenceModel model, string? ReturnToAlert)
         {
             if (string.IsNullOrEmpty(HttpContext.Session.GetString("OfficerName")))
                 return Unauthorized();
@@ -18,10 +19,15 @@ namespace SentinelPulse.Controllers
             model.CollectedDate = DateTime.Now;
             _db.Evidence.Add(model);
             _db.SaveChanges();
+
+            if (!string.IsNullOrEmpty(ReturnToAlert))
+                return RedirectToAction("ZainabAlertDetails", "Dashboard", new { id = model.CaseId });
+
             return RedirectToAction("Details", "Cases", new { id = model.CaseId });
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult Delete(int id, string caseId)
         {
             if (HttpContext.Session.GetString("OfficerRole") != "Admin") return Forbid();

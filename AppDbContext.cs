@@ -13,5 +13,6 @@ namespace SentinelPulse
         public DbSet<AlertModel> Alerts { get; set; }
         public DbSet<EvidenceModel> Evidence { get; set; }
         public DbSet<SuspectModel> Suspects { get; set; }
+        public DbSet<MissingChildModel> MissingChildren { get; set; }
     }
 }

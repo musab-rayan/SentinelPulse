@@ -10,19 +10,41 @@ function tickClock() {
 setInterval(tickClock, 1000);
 tickClock();
 
-// ============ THEME TOGGLE ============
+// One-time migration: reset stale dark preference from earlier builds
+if (localStorage.getItem('sp-theme') === 'dark' && !localStorage.getItem('sp-theme-migrated')) {
+  localStorage.removeItem('sp-theme');
+  localStorage.setItem('sp-theme-migrated', '1');
+}
+
+// ============ THEME TOGGLE (light default, dark opt-in) ============
+function applyTheme(theme) {
+  const isDark = theme === 'dark';
+  if (isDark) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+  }
+  const icon = document.querySelector('#theme-toggle i');
+  if (icon) icon.className = isDark ? 'bi bi-sun-fill' : 'bi bi-moon-stars-fill';
+}
+
 (function () {
-  const saved = localStorage.getItem('sp-theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', saved);
+  const savedTheme = localStorage.getItem('sp-theme') || 'light';
+  if (savedTheme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+  }
+  const icon = document.querySelector('#theme-toggle i');
+  if (icon) icon.className = savedTheme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-stars-fill';
 })();
+
 document.addEventListener('click', (e) => {
   if (e.target.closest('#theme-toggle')) {
-    const cur = document.documentElement.getAttribute('data-theme') || 'dark';
-    const next = cur === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const next = isDark ? 'light' : 'dark';
+    applyTheme(next);
     localStorage.setItem('sp-theme', next);
-    const icon = e.target.closest('#theme-toggle').querySelector('i');
-    if (icon) icon.className = next === 'dark' ? 'bi bi-moon-stars-fill' : 'bi bi-sun-fill';
   }
   if (e.target.closest('#alert-bell')) {
     fetch('/Alert/Latest')
@@ -37,16 +59,13 @@ document.addEventListener('click', (e) => {
             text.textContent = 'No active alerts on record.';
           }
           banner.classList.add('show');
-          setTimeout(() => banner.classList.remove('show'), 10000);
+          setTimeout(() => banner.classList.remove('show'), 15000);
         }
       })
       .catch(() => {
         const banner = document.getElementById('emergency-banner');
-        if (banner) { banner.classList.add('show'); setTimeout(() => banner.classList.remove('show'), 8000); }
+        if (banner) { banner.classList.add('show'); setTimeout(() => banner.classList.remove('show'), 15000); }
       });
-  }
-  if (e.target.closest('#sidebar-toggle')) {
-    document.getElementById('sidebar')?.classList.toggle('open');
   }
 });
 
@@ -69,23 +88,31 @@ function initCounters() {
 }
 
 // ============ CHART ============
+function cssVar(name, fallback) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
+}
+
 function initCrimeChart(data) {
   const ctx = document.getElementById('crimeChart');
   if (!ctx || typeof Chart === 'undefined') return;
   const labels = Object.keys(data);
   const values = Object.values(data);
+  const accent = cssVar('--accent', '#0066FF');
+  const muted = cssVar('--muted', '#8E8E8E');
+  const border = cssVar('--border', '#E8E8E5');
   const grad = ctx.getContext('2d').createLinearGradient(0, 0, 0, 280);
-  grad.addColorStop(0, 'rgba(232,184,75,0.9)');
-  grad.addColorStop(1, 'rgba(200,150,42,0.3)');
+  grad.addColorStop(0, accent);
+  grad.addColorStop(1, accent + '33');
   new Chart(ctx, {
     type: 'bar',
-    data: { labels, datasets: [{ label: 'Cases', data: values, backgroundColor: grad, borderColor: '#c8962a', borderWidth: 1, borderRadius: 6 }] },
+    data: { labels, datasets: [{ label: 'Cases', data: values, backgroundColor: grad, borderColor: accent, borderWidth: 1, borderRadius: 6 }] },
     options: {
       responsive: true,
       plugins: { legend: { display: false } },
       scales: {
-        x: { grid: { color: 'rgba(168,152,128,0.08)' }, ticks: { color: '#a89880' } },
-        y: { grid: { color: 'rgba(168,152,128,0.08)' }, ticks: { color: '#a89880' }, beginAtZero: true }
+        x: { grid: { color: border }, ticks: { color: muted } },
+        y: { grid: { color: border }, ticks: { color: muted }, beginAtZero: true }
       }
     }
   });
@@ -147,3 +174,20 @@ function initCasesPage() {
   }));
 }
 function closeCaseModal() { document.getElementById('case-modal')?.classList.add('hidden'); }
+
+window.addEventListener('scroll', function() {
+  const nav = document.querySelector('.top-nav');
+  if (!nav) return;
+  if (window.scrollY > 10) nav.classList.add('scrolled');
+  else nav.classList.remove('scrolled');
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  const path = window.location.pathname.toLowerCase();
+  document.querySelectorAll('.nav-link').forEach(link => {
+    const href = (link.getAttribute('href') || '').toLowerCase();
+    if (href !== '/' && path.startsWith(href)) {
+      link.classList.add('active');
+    }
+  });
+});
