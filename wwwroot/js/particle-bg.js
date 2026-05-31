@@ -41,7 +41,7 @@
     function animate() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        ctx.fillStyle = isDark ? 'rgba(200,150,42,0.5)' : 'rgba(26,26,26,0.35)';
+        ctx.fillStyle = isDark ? 'rgba(10,132,255,0.35)' : 'rgba(0,113,227,0.2)';
 
         particles.forEach(p => {
             const dx = mouse.x - p.x;

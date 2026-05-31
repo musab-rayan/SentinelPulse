@@ -54,7 +54,64 @@ document.addEventListener('click', (e) => {
         const text   = document.getElementById('banner-text');
         if (banner && text) {
           if (data && data.message) {
-            text.textContent = 'EMERGENCY — ' + data.station + ': ' + data.message + ' (Priority: ' + data.priority + ')';
+            if (data.missingChildAlertId && data.childName) {
+                text.innerHTML = `
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        <div><span style="background:#d6242a;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700;letter-spacing:1px;">&#9888; EMERGENCY &middot; ALL STATIONS</span></div>
+                        <div style="font-size:24px;font-weight:800;color:#d6242a;text-transform:uppercase;letter-spacing:-0.5px;margin-top:2px;">${data.childName}</div>
+                        <div style="font-size:14px;color:#d6242a;display:flex;gap:8px;align-items:center;">
+                            <span>Age ${data.age || '?'}</span> &middot; 
+                            <span>Last seen: ${data.lastSeen || '?'}</span> &middot; 
+                            <span>Assigned: ${data.assignedTo || 'Pending'}</span> &middot; 
+                            <span style="background:rgba(214,36,42,0.15);color:#d6242a;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:700;border:1px solid rgba(214,36,42,0.3);">HIGH</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                text.textContent = 'EMERGENCY — ' + data.station + ': ' + data.message + ' (Priority: ' + data.priority + ')';
+            }
+            
+            const iconEl = banner.querySelector('i.bi-exclamation-triangle-fill, img.banner-child-photo');
+            const container = banner.querySelector('.emergency-container');
+            
+            if (data.missingChildAlertId) {
+                banner.style.cursor = 'pointer';
+                banner.onclick = function(ev) {
+                    window.location.href = '/Dashboard/ZainabAlertDetails/' + data.missingChildAlertId;
+                };
+                banner.classList.add('clickable-banner');
+                
+                if (data.photoPath) {
+                    if (iconEl && iconEl.tagName === 'I') {
+                        const img = document.createElement('img');
+                        img.src = data.photoPath;
+                        img.className = 'banner-child-photo';
+                        img.style.cssText = 'width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid #d6242a;flex-shrink:0;';
+                        container.replaceChild(img, iconEl);
+                    } else if (iconEl && iconEl.tagName === 'IMG') {
+                        iconEl.src = data.photoPath;
+                        iconEl.style.cssText = 'width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid #d6242a;flex-shrink:0;';
+                    }
+                }
+            } else {
+                banner.style.cursor = 'default';
+                banner.onclick = null;
+                banner.classList.remove('clickable-banner');
+                
+                if (iconEl && iconEl.tagName === 'IMG') {
+                    const i = document.createElement('i');
+                    i.className = 'bi bi-exclamation-triangle-fill';
+                    container.replaceChild(i, iconEl);
+                }
+            }
+            
+            const closeBtn = banner.querySelector('.banner-close');
+            if (closeBtn) {
+                closeBtn.onclick = function(ev) {
+                    ev.stopPropagation();
+                    banner.classList.remove('show');
+                };
+            }
           } else {
             text.textContent = 'No active alerts on record.';
           }
@@ -135,8 +192,67 @@ function initWizard() {
     next.classList.toggle('hidden', step === total);
     submit.classList.toggle('hidden', step !== total);
   }
+
+  function validateStep(s) {
+    var stepDiv = document.querySelector('.wizard-step[data-step="' + s + '"]');
+    if (!stepDiv) return true;
+    var valid = true;
+
+    // Clear previous inline errors in this step
+    stepDiv.querySelectorAll('.field-error-inline').forEach(function(el) { el.remove(); });
+
+    // Validate required fields
+    stepDiv.querySelectorAll('input[required], select[required], textarea[required]').forEach(function(input) {
+      if (!input.value || !input.value.trim()) {
+        valid = false;
+        showFieldError(input, 'This field is required.');
+      }
+    });
+
+    // Regex validation for CNIC and Phone (Step 1)
+    var cnicInput = stepDiv.querySelector('[name="CitizenCNIC"]');
+    if (cnicInput && cnicInput.value.trim()) {
+      if (!/^\d{13}$/.test(cnicInput.value.trim())) {
+        valid = false;
+        showFieldError(cnicInput, 'CNIC must be exactly 13 digits, no dashes or spaces.');
+      }
+    }
+
+    var phoneInput = stepDiv.querySelector('[name="PhoneNumber"]');
+    if (phoneInput && phoneInput.value.trim()) {
+      if (!/^(0\d{10}|92\d{10})$/.test(phoneInput.value.trim())) {
+        valid = false;
+        showFieldError(phoneInput, 'Phone must be 11 digits starting with 0, or 12 digits starting with 92, no dashes or spaces.');
+      }
+    }
+
+    return valid;
+  }
+
+  function showFieldError(input, message) {
+    // Don't duplicate
+    var parent = input.closest('.form-group') || input.parentElement;
+    if (parent.querySelector('.field-error-inline')) return;
+    var span = document.createElement('span');
+    span.className = 'field-error-inline';
+    span.textContent = message;
+    span.style.cssText = 'color:var(--danger, #d6241a);font-size:0.8rem;display:block;margin-top:4px;';
+    parent.appendChild(span);
+    input.style.borderColor = 'var(--danger, #d6241a)';
+    // Clear on input
+    input.addEventListener('input', function handler() {
+      span.remove();
+      input.style.borderColor = '';
+      input.removeEventListener('input', handler);
+    }, { once: true });
+  }
+
   prev.addEventListener('click', () => { if (step > 1) { step--; render(); } });
-  next.addEventListener('click', () => { if (step < total) { step++; render(); } });
+  next.addEventListener('click', () => {
+    if (validateStep(step)) {
+      if (step < total) { step++; render(); }
+    }
+  });
   render();
 }
 
@@ -158,6 +274,16 @@ function initCasesPage() {
   }
   search?.addEventListener('input', apply);
   filter?.addEventListener('change', apply);
+
+  const initialStatus = new URLSearchParams(window.location.search).get('status');
+  if (initialStatus && filter) {
+    const opts = Array.from(filter.options);
+    const matched = opts.find(o => o.value.toLowerCase() === initialStatus.toLowerCase() || o.text.toLowerCase() === initialStatus.toLowerCase());
+    if (matched) {
+      filter.value = matched.value;
+      apply();
+    }
+  }
 
   rows.forEach(r => r.addEventListener('click', () => {
     const data = JSON.parse(r.dataset.case);

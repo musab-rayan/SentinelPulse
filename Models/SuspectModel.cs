@@ -14,6 +14,7 @@ namespace SentinelPulse.Models
         [Required]
         public string Name { get; set; } = "";
 
+        [RegularExpression(@"^\d{13}$", ErrorMessage = "CNIC must be exactly 13 digits, no dashes or spaces.")]
         public string? CNIC { get; set; }
         public string? Description { get; set; }
         public string? PhotoPath { get; set; }

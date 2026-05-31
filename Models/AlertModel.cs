@@ -12,4 +12,5 @@ public class AlertModel
     public string Station { get; set; } = string.Empty;
     public string Priority { get; set; } = "High";
     public DateTime Timestamp { get; set; } = DateTime.Now;
+    public int? MissingChildAlertId { get; set; }
 }

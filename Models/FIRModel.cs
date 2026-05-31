@@ -9,19 +9,21 @@ public class FIRModel
     [DatabaseGenerated(DatabaseGeneratedOption.None)]
     public string CaseId { get; set; } = string.Empty;
 
-    [Required, Display(Name = "Citizen Name")]
+    [Required(ErrorMessage = "Citizen name is required."), Display(Name = "Citizen Name")]
     public string CitizenName { get; set; } = string.Empty;
 
-    [Required, Display(Name = "CNIC")]
+    [Required(ErrorMessage = "CNIC is required."), Display(Name = "CNIC")]
+    [RegularExpression(@"^\d{13}$", ErrorMessage = "CNIC must be exactly 13 digits, no dashes or spaces.")]
     public string CitizenCNIC { get; set; } = string.Empty;
 
-    [Required, Phone, Display(Name = "Phone Number")]
+    [Required(ErrorMessage = "Phone number is required."), Display(Name = "Phone Number")]
+    [RegularExpression(@"^(0\d{10}|92\d{10})$", ErrorMessage = "Phone must be 11 digits starting with 0, or 12 digits starting with 92, no dashes or spaces.")]
     public string PhoneNumber { get; set; } = string.Empty;
 
-    [Required, Display(Name = "Crime Type")]
+    [Required(ErrorMessage = "Crime type is required."), Display(Name = "Crime Type")]
     public string CrimeType { get; set; } = string.Empty;
 
-    [Required]
+    [Required(ErrorMessage = "Description is required.")]
     public string Description { get; set; } = string.Empty;
 
     [Required]

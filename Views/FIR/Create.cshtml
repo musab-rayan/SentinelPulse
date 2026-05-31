@@ -42,24 +42,26 @@
             <div class="form-row">
                 <div class="form-group">
                     <label>Citizen Name</label>
-                    <input asp-for="CitizenName" class="form-control-warm" />
+                    <input asp-for="CitizenName" class="form-control-warm" required />
                     <span asp-validation-for="CitizenName" class="field-error"></span>
                 </div>
                 <div class="form-group">
                     <label>CNIC</label>
-                    <input asp-for="CitizenCNIC" class="form-control-warm" placeholder="00000-0000000-0" />
+                    <input asp-for="CitizenCNIC" class="form-control-warm" placeholder="1234567890123" required />
+                    <span asp-validation-for="CitizenCNIC" class="field-error"></span>
                 </div>
             </div>
             <div class="form-group">
                 <label>Phone Number</label>
-                <input asp-for="PhoneNumber" class="form-control-warm" placeholder="+92-300-0000000" />
+                <input asp-for="PhoneNumber" class="form-control-warm" placeholder="03001234567" required />
+                <span asp-validation-for="PhoneNumber" class="field-error"></span>
             </div>
         </div>
 
         <div class="wizard-step hidden" data-step="2">
             <div class="form-group">
                 <label>Crime Type</label>
-                <select asp-for="CrimeType" class="form-control-warm">
+                <select asp-for="CrimeType" class="form-control-warm" required>
                     <option value="">Select...</option>
                     <option>Theft</option>
                     <option>Assault</option>
@@ -81,7 +83,7 @@
             </div>
             <div class="form-group">
                 <label>Description</label>
-                <textarea asp-for="Description" class="form-control-warm" rows="5"></textarea>
+                <textarea asp-for="Description" class="form-control-warm" rows="5" required></textarea>
             </div>
         </div>
 
@@ -95,11 +97,10 @@
             </div>
 
             <div style="margin-top:16px;">
-                <label style="color:var(--muted);font-size:0.85rem;text-transform:uppercase;letter-spacing:1px;">
-                    Click on map to mark exact crime location (optional)
-                </label>
-                <div id="firMap" style="height:300px;border-radius:12px;margin-top:8px;border:1px solid var(--border);"></div>
-                <div id="coords-display" class="text-muted-warm" style="margin-top:6px;font-size:0.85rem;"></div>
+                @await Html.PartialAsync("_LocationPicker", new ViewDataDictionary(ViewData) {
+                    { "MapId", "firMap" },
+                    { "MapLabel", "Click on map to mark exact crime location (optional)" }
+                })
             </div>
         </div>
 
@@ -113,54 +114,26 @@
 
 @section Scripts {
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="~/js/location-picker.js" asp-append-version="true"></script>
 <script>
     initWizard();
 
-    var firMap = null;
-    var marker = null;
+    // Initialise the reusable location picker for Step 3
+    var firPicker = initLocationPicker({
+        mapId:           'firMap',
+        latInputId:      'lat-input',
+        lngInputId:      'lng-input',
+        addressInputId:  'Location',   // asp-for="Location" renders id="Location"
+        coordsDisplayId: 'firMap-coords'
+    });
 
-    function initFIRMap() {
-        if (firMap) return;
-        var mapDiv = document.getElementById('firMap');
-        if (!mapDiv) return;
-
-        firMap = L.map('firMap').setView([33.6844, 73.0479], 12);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(firMap);
-
-        firMap.on('click', function(e) {
-            var lat = e.latlng.lat.toFixed(6);
-            var lng = e.latlng.lng.toFixed(6);
-
-            document.getElementById('lat-input').value = lat;
-            document.getElementById('lng-input').value = lng;
-            document.getElementById('coords-display').textContent = 'Marked: ' + lat + ', ' + lng;
-
-            if (marker) {
-                marker.setLatLng(e.latlng);
-            } else {
-                marker = L.marker(e.latlng, { draggable: true }).addTo(firMap);
-                marker.on('dragend', function(ev) {
-                    var pos = ev.target.getLatLng();
-                    document.getElementById('lat-input').value = pos.lat.toFixed(6);
-                    document.getElementById('lng-input').value = pos.lng.toFixed(6);
-                    document.getElementById('coords-display').textContent =
-                        'Marked: ' + pos.lat.toFixed(6) + ', ' + pos.lng.toFixed(6);
-                });
-            }
-        });
-    }
-
-    // Initialize map when Step 3 becomes visible
+    // Ensure map renders correctly when Step 3 becomes visible
     document.getElementById('next-btn').addEventListener('click', function () {
         setTimeout(function () {
             var step3 = document.querySelector('[data-step="3"]');
             if (step3 && !step3.classList.contains('hidden')) {
-                initFIRMap();
-                setTimeout(function () {
-                    if (firMap) firMap.invalidateSize();
-                }, 300);
+                firPicker.init();
+                setTimeout(function () { firPicker.invalidateSize(); }, 300);
             }
         }, 100);
     });

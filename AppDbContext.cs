@@ -14,5 +14,17 @@ namespace SentinelPulse
         public DbSet<EvidenceModel> Evidence { get; set; }
         public DbSet<SuspectModel> Suspects { get; set; }
         public DbSet<MissingChildModel> MissingChildren { get; set; }
+        public DbSet<MissingChildAssignment> MissingChildAssignments { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<CaseModel>()
+                .HasIndex(c => new { c.Status, c.DateOpened });
+
+            modelBuilder.Entity<MissingChildModel>()
+                .HasIndex(m => new { m.Status, m.ReportedDate });
+        }
     }
 }

@@ -1,51 +1,77 @@
-# SentinelPulse — Law Enforcement Operations Portal
+# SentinelPulse
+Law Enforcement Operations Portal
 
-A full-stack ASP.NET Core MVC (.NET 9) web application for police station management with role-based access, real-time crime mapping, and database-connected operations.
+SentinelPulse is a full-stack ASP.NET Core MVC web application developed for police station management. It provides role-based access control, automated FIR prioritization, and real-time interactive crime mapping to streamline case handling. The system allows officers and administrators to track cases from initial reporting to final closure, managing suspects, evidence, and emergency alerts.
 
 ## Tech Stack
-- ASP.NET Core MVC (.NET 9) + C# 12
-- Entity Framework Core + SQL Server (LocalDB)
-- Razor Views + Bootstrap 5 + custom dark theme
-- Chart.js for crime analytics
-- Leaflet.js + OpenStreetMap for crime mapping
-- Nominatim API for geocoding
+- **Framework**: ASP.NET Core MVC (.NET 9.0)
+- **Database**: Entity Framework Core (v9.0.0), SQL Server (LocalDB)
+- **Frontend**: Razor Views, Bootstrap 5.3, Bootstrap Icons, Custom CSS (Glassmorphism UI, Light/Dark Theme toggle)
+- **Typography**: Geist and Geist Mono fonts
+- **Mapping & Geocoding**: Leaflet.js, OpenStreetMap, Nominatim API
+- **Analytics**: Chart.js
 
 ## Features
-- Role-based login (DSP Admin / Officers)
-- Dual dashboards (DSP Command Dashboard / Officer Dashboard)
-- 3-step FIR registration wizard with map-based location marking
-- Auto priority assignment based on crime type and urgency analysis
-- CNIC duplicate check on FIR filing
-- Case management with status flow: Open > Under Investigation > Pending Approval > Closed
-- Officer can update case status and add investigation notes
-- DSP approves/rejects case closure
-- Evidence locker - attach evidence to cases
-- Suspect management per case
-- Interactive crime map with live pins (Leaflet.js + OpenStreetMap)
-- Officer management panel (DSP only)
-- Print-ready FIR documents
-- Emergency alert broadcast system
-- Dark/light theme toggle
-- Live ticking clock
-- Mobile responsive (sidebar collapses < 768px)
+- **Dual Dashboards**: Dedicated views for DSP (Admin) and Officers. Admin view includes station-wide statistics, active cases, and a global crime distribution chart. Officer view filters active tasks to their assigned caseload.
+- **FIR Registration (3-Step Wizard)**: A multi-step form to collect citizen details, crime details, and location coordinates. Includes a built-in validation check for duplicate CNIC entries.
+- **Auto-Prioritization System**: Uses keyword analysis on the incident description to automatically assign an urgency label (Critical, Concerning, Standard, Routine) and priority level (High, Medium, Low) to incoming FIRs.
+- **Interactive Crime Map**: Visualizes cases using Leaflet.js. Officers can pinpoint incident locations via click-to-mark during FIR creation, with Nominatim API serving as a fallback geocoder. The map displays standard cases and high-priority Zainab Alerts using distinct marker colors.
+- **Case Management Lifecycle**: Cases transition through defined statuses (Open, Under Investigation, Pending Approval, Closed). Officers maintain an investigation log with timestamped notes.
+- **Zainab Alert System**: A dedicated emergency broadcast module for missing children. Submitting an alert automatically assigns the case to the two officers with the lowest active caseloads and triggers a UI emergency banner.
+- **Evidence & Suspect Logging**: Allows attaching suspect profiles and evidence records to specific cases.
 
-## API Integrations
-- OpenStreetMap Tile API - map rendering
-- Nominatim Geocoding API - location to coordinates
-- Leaflet.js - interactive map with click-to-mark
+## Screenshots
+<!-- TODO: Add screenshot of the Login screen -->
+<!-- TODO: Add screenshot of the DSP Command Dashboard -->
+<!-- TODO: Add screenshot of the FIR 3-Step Wizard -->
+<!-- TODO: Add screenshot of the Interactive Crime Map -->
 
-## Login Credentials
-| Username | Password | Role |
-|----------|----------|------|
-| admin | admin123 | DSP (Admin) |
-| SP-1042 | kamran123 | ASI Officer |
-| SP-1187 | hina123 | ASI Officer |
-| SP-2231 | bilal123 | Constable |
-| SP-2305 | zara123 | Constable |
+## Getting Started
 
-## Setup
-1. Clone the repo
-2. Open in Visual Studio 2022
-3. Update connection string in appsettings.json if needed
-4. Run dotnet ef database update in Package Manager Console
-5. Press F5 to run 
+### Prerequisites
+- .NET 9.0 SDK
+- SQL Server LocalDB (included with Visual Studio workloads)
+- Visual Studio 2022 (recommended)
+
+### Installation
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd SentinelPulse/SentinelPulse
+   ```
+2. **Restore NuGet packages:**
+   ```bash
+   dotnet restore
+   ```
+3. **Apply EF Core Migrations:**
+   The application uses LocalDB configured in `appsettings.json`. Create the database by running:
+   ```bash
+   dotnet ef database update
+   ```
+   *(Alternatively, run `Update-Database` in the Visual Studio Package Manager Console).*
+
+4. **Run the Application:**
+   ```bash
+   dotnet run
+   ```
+   The application will launch on the ports defined in `launchSettings.json`:
+   - `https://localhost:5001`
+   - `http://localhost:5000`
+
+## Roles & Authorization
+Authorization is enforced manually via `HttpContext.Session` checks across controllers.
+- **DSP (Admin)**: Granted full station visibility. Can view all cases, access the global crime map, update officer account statuses, transfer cases between personnel, and exclusively approve or reject case closure requests.
+- **Officer**: Granted restricted visibility. Can only view and update cases directly assigned to them. They cannot close a case directly; they must submit a "Pending Approval" closure request to the DSP.
+
+## Login
+Authentication is handled by the `AccountController`. The login action queries the `Officers` DbSet in `AppDbContext`, comparing the submitted badge number and plain-text password against the database records. Upon a successful match, the system stores the `OfficerName`, `OfficerBadge`, and `OfficerRole` in the session state.
+
+**Demo Credentials:**
+| Role | Username (Badge Number) | Password |
+|---|---|---|
+| DSP (Admin) | `[PLACEHOLDER_ADMIN_BADGE]` | `[PLACEHOLDER_ADMIN_PASS]` |
+| Officer | `[PLACEHOLDER_OFFICER_BADGE]` | `[PLACEHOLDER_OFFICER_PASS]` |
+*(Note: Replace with database seed values if applicable. Never commit real credentials.)*
+
+---
+*Advanced Programming course project, NUML Islamabad.*

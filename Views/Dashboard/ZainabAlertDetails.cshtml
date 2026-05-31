@@ -1,13 +1,37 @@
-﻿@model SentinelPulse.Models.MissingChildModel
-@{ ViewData["Title"] = $"Zainab Alert ZA-{Model.AlertId}"; }
+@model SentinelPulse.Models.MissingChildModel
+@{ 
+    ViewData["Title"] = $"Zainab Alert ZA-{Model.AlertId}"; 
+    var isAdmin = ViewBag.IsAdmin == true;
+    var currentOfficerId = ViewBag.CurrentOfficerId != null ? (int)ViewBag.CurrentOfficerId : 0;
+    var assignedOfficerIds = ViewBag.AssignedOfficerIds as List<int> ?? new List<int>();
+    var isAssigned = assignedOfficerIds.Contains(currentOfficerId);
+    var canUpdate = isAdmin || isAssigned;
+    var isTerminal = Model.Status == "Found Safe" || Model.Status == "Found Deceased" || Model.Status == "Closed";
+}
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
 <div class="page-header">
     <div>
         <h1 class="page-title" style="color:var(--danger)"><i class="bi bi-exclamation-triangle-fill"></i> Zainab Alert: @Model.ChildName</h1>
-        <p class="page-sub"><span class="badge-num">ZA-@Model.AlertId</span> Â· Reported by @Model.ReportedBy</p>
+        <p class="page-sub"><span class="badge-num">ZA-@Model.AlertId</span> · Reported by @Model.ReportedBy</p>
     </div>
     <a asp-action="ZainabAlert" class="btn-ghost"><i class="bi bi-arrow-left"></i> Back</a>
 </div>
+
+@if (TempData["Error"] != null)
+{
+    <div style="background:var(--danger-soft);color:var(--danger);padding:12px 16px;border-radius:10px;border:1px solid var(--danger-soft-border);margin-bottom:16px;">
+        <i class="bi bi-exclamation-triangle-fill"></i> @TempData["Error"]
+    </div>
+}
+
+@if (TempData["UploadError"] != null)
+{
+    <div style="background:var(--danger-soft);color:var(--danger);padding:10px 14px;border-radius:8px;border:1px solid var(--danger-soft-border);margin-bottom:16px;font-size:0.9rem;">
+        <i class="bi bi-exclamation-triangle-fill"></i> @TempData["UploadError"]
+    </div>
+}
 
 <div style="margin-bottom:20px;">
     <button onclick="window.print()" class="btn-primary-amber no-print" style="width:auto;padding:8px 24px;">
@@ -16,12 +40,57 @@
 </div>
 
 <div class="dash-grid">
-    <div class="glass-card">
-        <h3>Child Information</h3>
-        <div class="kv"><label>Name</label><div style="color:var(--danger);font-weight:600">@Model.ChildName</div></div>
-        <div class="kv"><label>Age</label><div>@Model.Age</div></div>
-        <div class="kv"><label>Gender</label><div>@Model.Gender</div></div>
-        <div class="kv"><label>Description</label><div>@Model.Description</div></div>
+    <div class="glass-card" style="display: flex; gap: 1.5rem; align-items: flex-start; flex-wrap: wrap;">
+        <div style="width: 280px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px;">
+            @if (!string.IsNullOrEmpty(Model.PhotoPath))
+            {
+                <img src="@Model.PhotoPath" alt="@Model.ChildName" style="width:280px;height:280px;object-fit:cover;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);" />
+                @if (canUpdate && !isTerminal)
+                {
+                    <button type="button" class="btn-ghost" style="width: 100%; justify-content: center;" onclick="document.getElementById('replace-photo-form').style.display = 'block'; this.style.display = 'none';">
+                        <i class="bi bi-camera-fill"></i> Replace Photo
+                    </button>
+                    <form id="replace-photo-form" method="post" asp-controller="Dashboard" asp-action="UpdateMissingChildPhoto" enctype="multipart/form-data" style="display:none; padding:12px; background:var(--surface-2); border-radius:8px; border:1px solid var(--border);">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.AlertId" />
+                        <div class="form-group" style="margin-bottom:8px;">
+                            <label style="font-size:11px;">Upload New Photo</label>
+                            <input type="file" name="photo" accept=".jpg,.jpeg,.png" class="form-control-warm" style="padding:6px;font-size:13px;" required />
+                        </div>
+                        <div style="display:flex;gap:6px;">
+                            <button type="submit" class="btn-primary-amber" style="flex:1;padding:6px;font-size:13px;">Save</button>
+                            <button type="button" class="btn-ghost" style="padding:6px;font-size:13px;" onclick="document.getElementById('replace-photo-form').style.display='none'; this.parentElement.parentElement.previousElementSibling.style.display='inline-flex';">Cancel</button>
+                        </div>
+                    </form>
+                }
+            }
+            else
+            {
+                <div style="width:280px;height:280px;background:var(--border);border-radius:12px;display:flex;flex-direction:column;justify-content:center;align-items:center;color:var(--muted);gap:12px;">
+                    <i class="bi bi-person-fill" style="font-size:4rem;line-height:1;"></i>
+                    <span style="font-weight:600;font-size:0.9rem;">No photo on file</span>
+                </div>
+                @if (canUpdate && !isTerminal)
+                {
+                    <form method="post" asp-controller="Dashboard" asp-action="UpdateMissingChildPhoto" enctype="multipart/form-data" style="padding:12px; background:var(--surface-2); border-radius:8px; border:1px solid var(--border);">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.AlertId" />
+                        <div class="form-group" style="margin-bottom:8px;">
+                            <label style="font-size:11px;">Add Photo</label>
+                            <input type="file" name="photo" accept=".jpg,.jpeg,.png" class="form-control-warm" style="padding:6px;font-size:13px;" required />
+                        </div>
+                        <button type="submit" class="btn-primary-amber" style="width:100%;padding:6px;font-size:13px;"><i class="bi bi-upload"></i> Upload Photo</button>
+                    </form>
+                }
+            }
+        </div>
+        <div style="flex: 1; min-width: 250px;">
+            <h3>Child Information</h3>
+            <div class="kv"><label>Name</label><div style="color:var(--danger);font-weight:600">@Model.ChildName</div></div>
+            <div class="kv"><label>Age</label><div>@Model.Age</div></div>
+            <div class="kv"><label>Gender</label><div>@Model.Gender</div></div>
+            <div class="kv"><label>Description</label><div>@Model.Description</div></div>
+        </div>
     </div>
 
     <div class="glass-card">
@@ -61,13 +130,36 @@
     @if (evidence != null && evidence.Any())
     {
         <table class="data-table">
-            <thead><tr><th>Type</th><th>Description</th><th>Collected By</th><th>Date</th></tr></thead>
+            <thead><tr><th>Type</th><th>Description</th><th>File</th><th>Collected By</th><th>Date</th></tr></thead>
             <tbody>
                 @foreach (var e in evidence)
                 {
+                    var evExt = string.IsNullOrEmpty(e.FilePath) ? "" : System.IO.Path.GetExtension(e.FilePath).ToLowerInvariant();
+                    var evIsImg = evExt == ".jpg" || evExt == ".jpeg" || evExt == ".png";
                     <tr>
                         <td>@e.Type</td>
                         <td>@e.Description</td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(e.FilePath))
+                            {
+                                if (evIsImg)
+                                {
+                                    <a href="@e.FilePath" target="_blank">
+                                        <img src="@e.FilePath" alt="Evidence" style="width:80px;height:60px;object-fit:cover;border-radius:6px;" />
+                                    </a>
+                                }
+                                else
+                                {
+                                    <a href="@e.FilePath" target="_blank" class="btn-ghost" style="display:inline-flex;width:auto;padding:4px 12px;font-size:.8rem;gap:4px;">
+                                        <i class="bi bi-@(evExt == ".pdf" ? "file-earmark-pdf" : "camera-video")"></i> View / Download
+                                    </a>
+                                }
+                            }
+                            else
+                            {
+                                <span style="color:var(--muted);font-size:.8rem;">—</span>
+                            }
+                        </td>
                         <td>@e.CollectedBy</td>
                         <td>@e.CollectedDate.ToString("dd MMM yyyy HH:mm")</td>
                     </tr>
@@ -79,25 +171,32 @@
     {
         <p style="color:var(--muted);margin:.75rem 0 1.5rem;">No evidence logged yet.</p>
     }
-    <form method="post" asp-controller="Evidence" asp-action="Add" style="margin-top:16px;">
-        @Html.AntiForgeryToken()
-        <input type="hidden" name="CaseId" value="@Model.AlertId" />
-        <input type="hidden" name="ReturnToAlert" value="true" />
-        <div class="form-row">
-            <div class="form-group">
-                <label>Type</label>
-                <select name="Type" class="form-control-warm">
-                    <option>Physical</option><option>Digital</option><option>Document</option>
-                    <option>Forensic</option><option>Witness Statement</option><option>CCTV Footage</option><option>Other</option>
-                </select>
+    @if (canUpdate && !isTerminal)
+    {
+        <form method="post" asp-controller="Evidence" asp-action="Add" enctype="multipart/form-data" style="margin-top:16px;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="CaseId" value="@Model.AlertId" />
+            <input type="hidden" name="ReturnToAlert" value="true" />
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Type</label>
+                    <select name="Type" class="form-control-warm">
+                        <option>Physical</option><option>Digital</option><option>Document</option>
+                        <option>Forensic</option><option>Witness Statement</option><option>CCTV Footage</option><option>Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="Description" class="form-control-warm" rows="2" required></textarea>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Description</label>
-                <textarea name="Description" class="form-control-warm" rows="2" required></textarea>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>Attach File (optional — jpg, png, pdf, mp4 — max 10 MB)</label>
+                <input type="file" name="MediaFile" accept=".jpg,.jpeg,.png,.pdf,.mp4" class="form-control-warm" style="padding:8px;" />
             </div>
-        </div>
-        <button type="submit" class="btn-primary-amber" style="width:auto;padding:8px 24px;">Add Evidence</button>
-    </form>
+            <button type="submit" class="btn-primary-amber" style="width:auto;padding:8px 24px;">Add Evidence</button>
+        </form>
+    }
 </div>
 
 <div class="glass-card" style="padding:24px;margin-top:20px;">
@@ -107,72 +206,169 @@
     }
     @if (suspects != null && suspects.Any())
     {
-        foreach (var s in suspects)
-        {
-            <div class="kv" style="padding:12px 0;">
-                <div><strong>@s.Name</strong> @(s.CNIC != null ? "— CNIC: " + s.CNIC : "")</div>
-                <div class="text-muted-warm">@s.Description</div>
-                <div class="text-muted-warm">Added: @s.AddedDate.ToString("dd MMM yyyy")</div>
-            </div>
-        }
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1rem;margin-bottom:1rem;">
+            @foreach (var s in suspects)
+            {
+                <div class="glass-card" style="padding:1rem;">
+                    @if (!string.IsNullOrEmpty(s.PhotoPath))
+                    {
+                        <img src="@s.PhotoPath" alt="Suspect photo"
+                             style="width:100%;height:140px;object-fit:cover;border-radius:8px;margin-bottom:.75rem;" />
+                    }
+                    else
+                    {
+                        <div style="width:100%;height:60px;display:grid;place-items:center;background:var(--border);border-radius:8px;margin-bottom:.75rem;color:var(--muted);font-size:1.8rem;">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                    }
+                    <div style="font-weight:700;">@s.Name</div>
+                    @if (!string.IsNullOrEmpty(s.CNIC))
+                    {
+                        <div style="font-size:.8rem;color:var(--muted);margin:.2rem 0;"><span class="badge-num">@s.CNIC</span></div>
+                    }
+                    @if (!string.IsNullOrEmpty(s.Description))
+                    {
+                        <p style="font-size:.85rem;color:var(--muted);margin:.4rem 0 0;">@s.Description</p>
+                    }
+                    <div class="text-muted-warm" style="font-size:.75rem;margin-top:.3rem;">Added: @s.AddedDate.ToString("dd MMM yyyy")</div>
+                </div>
+            }
+        </div>
     }
     else
     {
         <p style="color:var(--muted);margin:.75rem 0 1.5rem;">No suspects on record yet.</p>
     }
-    <form method="post" asp-controller="Suspects" asp-action="Add" style="margin-top:16px;">
-        @Html.AntiForgeryToken()
-        <input type="hidden" name="CaseId" value="@Model.AlertId" />
-        <input type="hidden" name="ReturnToAlert" value="true" />
-        <div class="form-row">
-            <div class="form-group">
-                <label>Suspect Name</label>
-                <input type="text" name="Name" class="form-control-warm" required />
+    @if (canUpdate && !isTerminal)
+    {
+        <form method="post" asp-controller="Suspects" asp-action="Add" enctype="multipart/form-data" style="margin-top:16px;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="CaseId" value="@Model.AlertId" />
+            <input type="hidden" name="ReturnToAlert" value="true" />
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Suspect Name</label>
+                    <input type="text" name="Name" class="form-control-warm" required />
+                </div>
+                <div class="form-group">
+                    <label>CNIC (optional)</label>
+                    <input type="text" name="CNIC" id="za-suspect-cnic" class="form-control-warm" placeholder="1234567890123" />
+                    <span id="za-suspect-cnic-error" class="field-error"></span>
+                </div>
             </div>
-            <div class="form-group">
-                <label>CNIC (optional)</label>
-                <input type="text" name="CNIC" class="form-control-warm" placeholder="00000-0000000-0" />
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>Description</label>
+                <textarea name="Description" class="form-control-warm" rows="2"></textarea>
             </div>
-        </div>
-        <div class="form-group" style="margin-bottom:12px;">
-            <label>Description</label>
-            <textarea name="Description" class="form-control-warm" rows="2"></textarea>
-        </div>
-        <button type="submit" class="btn-primary-amber" style="width:auto;padding:8px 24px;">Add Suspect</button>
-    </form>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>Photo (optional — jpg, jpeg, png — max 10 MB)</label>
+                <input type="file" name="Photo" accept=".jpg,.jpeg,.png" class="form-control-warm" style="padding:8px;" />
+            </div>
+            <button type="submit" class="btn-primary-amber" style="width:auto;padding:8px 24px;">Add Suspect</button>
+        </form>
+    }
 </div>
 
-@if (Model.Status != "Found Safe" && Model.Status != "Found Deceased" && Model.Status != "Closed")
+@if (!isTerminal)
 {
-    <div class="glass-card" style="padding:20px;margin-top:20px;">
-        <h3 style="margin-bottom:16px;">Update Alert Status</h3>
-        <form method="post" asp-controller="Dashboard" asp-action="UpdateZainabAlert" asp-route-id="@Model.AlertId">
-            @Html.AntiForgeryToken()
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
-                <div>
-                    <label style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;display:block;margin-bottom:6px;">Update Status</label>
-                    <select name="status" class="form-control-warm" required>
-                        <option value="Active Search">Active Search</option>
-                        <option value="Found Safe">Found Safe</option>
-                        <option value="Found Deceased">Found Deceased</option>
-                        @if (Context.Session.GetString("OfficerRole") == "Admin")
-                        {
-                            <option value="Closed">Close Alert</option>
-                        }
-                    </select>
-                </div>
-                <div>
-                    <label style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;display:block;margin-bottom:6px;">Update Time</label>
-                    <input type="text" class="form-control-warm" value="@DateTime.Now.ToString("dd MMM yyyy HH:mm")" disabled />
+
+    if (!string.IsNullOrEmpty(Model.PendingStatus))
+    {
+        if (isAdmin)
+        {
+            <div class="glass-card" style="margin-top:20px;padding:24px;border:2px solid var(--primary-amber);background:rgba(217,119,6,.05);">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <h3 style="margin:0;color:var(--primary-amber);display:flex;align-items:center;gap:8px;">
+                            <i class="bi bi-shield-lock-fill"></i> Closure Approval Requested
+                        </h3>
+                        <p style="margin:8px 0 0;color:var(--muted-warm);">
+                            Officer requested terminal status: <strong style="color:var(--foreground);">@Model.PendingStatus</strong><br>
+                            Requested at: @Model.RequestedAt?.ToString("dd MMM yyyy HH:mm")
+                        </p>
+                    </div>
+                    <form method="post" asp-action="UpdateZainabAlert" style="display:flex;gap:12px;">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.AlertId" />
+                        <input type="hidden" name="status" value="@Model.PendingStatus" />
+                        <button type="submit" name="action" value="RejectPending" class="btn-ghost" style="color:var(--danger);border-color:var(--danger-soft-border);"><i class="bi bi-x-circle"></i> Reject</button>
+                        <button type="submit" name="action" value="ApprovePending" class="btn-primary-amber"><i class="bi bi-check-circle"></i> Approve &amp; Close</button>
+                    </form>
                 </div>
             </div>
-            <div style="margin-bottom:14px;">
-                <label style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;display:block;margin-bottom:6px;">Update Notes</label>
-                <textarea name="notes" class="form-control-warm" rows="3" placeholder="e.g. Child recovered safely from the location, taken to PIMS Hospital for checkup. Guardian informed."></textarea>
+        }
+        else if (isAssigned)
+        {
+            <div class="glass-card" style="margin-top:20px;padding:24px;border-left:4px solid var(--primary-amber);background:rgba(217,119,6,.05);">
+                <h3 style="margin:0 0 8px;display:flex;align-items:center;gap:8px;">
+                    <i class="bi bi-hourglass-split"></i> Awaiting Approval
+                </h3>
+                <p style="margin:0;color:var(--muted-warm);">
+                    You requested to mark this alert as <strong>@Model.PendingStatus</strong> on @Model.RequestedAt?.ToString("dd MMM yyyy HH:mm"). Awaiting Admin/DSP review.
+                </p>
             </div>
-            <button type="submit" class="btn-primary-amber">Submit Update</button>
-        </form>
-    </div>
+        }
+    }
+    
+    if (string.IsNullOrEmpty(Model.PendingStatus) && (isAdmin || isAssigned))
+    {
+        <div class="glass-card" style="padding:20px;margin-top:20px;">
+            <h3 style="margin-bottom:16px;">Update Alert Status</h3>
+            <form method="post" asp-controller="Dashboard" asp-action="UpdateZainabAlert" asp-route-id="@Model.AlertId">
+                @Html.AntiForgeryToken()
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+                    <div>
+                        <label style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;display:block;margin-bottom:6px;">Update Status</label>
+                        <select name="status" class="form-control-warm" required>
+                            <option value="Active Search">Active Search</option>
+                            <option value="Under Investigation">Under Investigation</option>
+                            <option value="Lead Found">Lead Found</option>
+                            <option value="Sighting Reported">Sighting Reported</option>
+                            @if (isAdmin)
+                            {
+                                <optgroup label="Direct Closure">
+                                    <option value="Found Safe">Found Safe</option>
+                                    <option value="Found Deceased">Found Deceased</option>
+                                    <option value="Closed">Closed</option>
+                                </optgroup>
+                            }
+                            else
+                            {
+                                <optgroup label="Request Closure Approval">
+                                    <option value="Found Safe">Request: Found Safe</option>
+                                    <option value="Found Deceased">Request: Found Deceased</option>
+                                    <option value="Closed">Request: Closed</option>
+                                </optgroup>
+                            }
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;display:block;margin-bottom:6px;">Update Time</label>
+                        <input type="text" class="form-control-warm" value="@DateTime.Now.ToString("dd MMM yyyy HH:mm")" disabled />
+                    </div>
+                </div>
+                <div style="margin-bottom:14px;">
+                    <label style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;display:block;margin-bottom:6px;">Update Notes</label>
+                    <textarea name="notes" class="form-control-warm" rows="3" placeholder="e.g. Child recovered safely from the location, taken to PIMS Hospital for checkup. Guardian informed."></textarea>
+                </div>
+
+                <div style="margin-bottom:14px;">
+                    <label style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;display:block;margin-bottom:6px;">Update Last Seen Location</label>
+                    <input name="lastSeenLocation" id="za-edit-location" class="form-control-warm" value="@Model.LastSeenLocation" />
+                </div>
+
+                @await Html.PartialAsync("_LocationPicker", new ViewDataDictionary(ViewData) {
+                    { "MapId", "zaEditMap" },
+                    { "MapLabel", "Update pinned location (optional)" },
+                    { "MapHeight", "260px" }
+                })
+                <input type="hidden" name="latitude" id="za-edit-lat" value="@Model.Latitude" />
+                <input type="hidden" name="longitude" id="za-edit-lng" value="@Model.Longitude" />
+
+                <button type="submit" class="btn-primary-amber" style="margin-top:14px;">Submit Update</button>
+            </form>
+        </div>
+    }
 }
 else
 {
@@ -185,6 +381,53 @@ else
         <h3 style="margin:0;">This alert is @Model.Status</h3>
         <p class="text-muted-warm" style="margin-top:4px;">No further updates can be made to this alert.</p>
     </div>
+}
+
+@section Scripts {
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="~/js/location-picker.js" asp-append-version="true"></script>
+<script>
+    // Location picker for the Update Alert form
+    initLocationPicker({
+        mapId:           'zaEditMap',
+        latInputId:      'za-edit-lat',
+        lngInputId:      'za-edit-lng',
+        addressInputId:  'za-edit-location',
+        coordsDisplayId: 'zaEditMap-coords',
+        initialLat:      @(Model.Latitude?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "33.6844"),
+        initialLng:      @(Model.Longitude?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "73.0479")
+    });
+
+    // Client-side CNIC validation for suspect form on Zainab Alert details
+    (function() {
+        var suspectForm = document.querySelector('form[action*="Suspects/Add"]');
+        if (!suspectForm) return;
+        suspectForm.addEventListener('submit', function(e) {
+            var cnicInput = document.getElementById('za-suspect-cnic');
+            var cnicError = document.getElementById('za-suspect-cnic-error');
+            if (!cnicInput || !cnicError) return;
+
+            // Reset
+            cnicError.textContent = '';
+            cnicInput.style.borderColor = '';
+
+            if (cnicInput.value.trim() && !/^\d{13}$/.test(cnicInput.value.trim())) {
+                e.preventDefault();
+                cnicError.textContent = 'CNIC must be exactly 13 digits, no dashes or spaces.';
+                cnicInput.style.borderColor = 'var(--danger, #d6241a)';
+            }
+        });
+
+        var cnicInput = document.getElementById('za-suspect-cnic');
+        var cnicError = document.getElementById('za-suspect-cnic-error');
+        if (cnicInput && cnicError) {
+            cnicInput.addEventListener('input', function() {
+                cnicError.textContent = '';
+                cnicInput.style.borderColor = '';
+            });
+        }
+    })();
+</script>
 }
 
 @section PrintArea {
@@ -209,6 +452,19 @@ else
         <div style="border-top:3px double #000;border-bottom:1px solid #000;text-align:center;padding:8px 0;margin-bottom:18px;">
             <div style="font-size:14pt;font-weight:bold;letter-spacing:2px;">MISSING CHILD ALERT REPORT</div>
             <div style="font-size:9pt;font-style:italic;">Confidential — For Official Use Only</div>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 20px;">
+            @if (!string.IsNullOrEmpty(Model.PhotoPath))
+            {
+                <img src="@Model.PhotoPath" alt="@Model.ChildName" style="width: 200px; height: 200px; object-fit: cover; border: 2px solid #000; border-radius: 8px;" />
+            }
+            else
+            {
+                <div style="width: 200px; height: 200px; border: 2px solid #000; border-radius: 8px; margin: 0 auto; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #666; font-size: 12pt; background: #f5f5f5;">
+                    <i class="bi bi-person-fill" style="font-size: 40pt; display: block; margin-bottom: 8px;"></i>No photo on file
+                </div>
+            }
         </div>
 
         <div style="font-size:11pt;font-weight:bold;background:#000;color:#fff;padding:4px 10px;margin-bottom:0;">SECTION 1 — ALERT OVERVIEW</div>

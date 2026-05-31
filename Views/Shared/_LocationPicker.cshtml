@@ -1,0 +1,40 @@
+@*
+    Reusable Location Picker partial view.
+    Renders: map container, "Use my current location" button, status message, coords display.
+
+    Required ViewData keys:
+        MapId            – unique id for the map div  (e.g. "firMap", "zainabMap")
+
+    Optional ViewData keys:
+        MapLabel         – label text above the map (default: "Pin location on map (optional)")
+        MapHeight        – CSS height string (default: "300px")
+*@
+
+@{
+    var mapId     = ViewData["MapId"]?.ToString()     ?? "locationMap";
+    var mapLabel  = ViewData["MapLabel"]?.ToString()   ?? "Pin location on map (optional)";
+    var mapHeight = ViewData["MapHeight"]?.ToString()  ?? "300px";
+}
+
+<div class="location-picker-wrap" style="margin-top:16px;">
+    <label style="color:var(--muted);font-size:0.85rem;text-transform:uppercase;letter-spacing:1px;">
+        @mapLabel
+    </label>
+
+    <div style="display:flex;align-items:center;gap:12px;margin:8px 0;">
+        <button type="button"
+                class="btn-ghost"
+                id="@(mapId)-geolocate"
+                style="width:auto;padding:6px 16px;font-size:0.85rem;">
+            <i class="bi bi-crosshair"></i> Use my current location
+        </button>
+        <span id="@(mapId)-geo-status" style="font-size:0.8rem;"></span>
+    </div>
+
+    <div id="@mapId"
+         style="height:@mapHeight;border-radius:12px;border:1px solid var(--border);"></div>
+
+    <div id="@(mapId)-coords"
+         class="text-muted-warm"
+         style="margin-top:6px;font-size:0.85rem;"></div>
+</div>

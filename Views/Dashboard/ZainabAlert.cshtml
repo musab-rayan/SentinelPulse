@@ -12,16 +12,23 @@
 
 @if (TempData["Success"] != null)
 {
-    <div class="alert" style="background:var(--danger-soft);border:1px solid var(--danger);color:var(--danger);padding:1rem;border-radius:8px;margin-bottom:1rem">
+    <div class="alert" style="background:var(--success-soft);border:1px solid var(--success);color:var(--success);padding:1rem;border-radius:8px;margin-bottom:1rem">
         <i class="bi bi-check-circle-fill"></i> @TempData["Success"]
     </div>
 }
 
 <div class="glass-card" style="padding:2rem;margin-bottom:2rem">
     <h3 style="color:var(--amber);margin-bottom:1.5rem">File New Alert</h3>
-    <form asp-action="ZainabAlert" method="post">
+    <form asp-action="ZainabAlert" method="post" enctype="multipart/form-data">
         @Html.AntiForgeryToken()
         <input type="hidden" name="LastSeenDistrict" value="Islamabad" />
+        <div class="form-row">
+            <div class="form-group" style="flex: 1 1 100%;">
+                <label>Child Photo (Optional)</label>
+                <input type="file" name="photo" accept=".jpg,.jpeg,.png" class="form-control-warm" />
+                @Html.ValidationMessage("PhotoPath", new { @class = "field-error" })
+            </div>
+        </div>
         <div class="form-row">
             <div class="form-group">
                 <label>Child Name</label>
@@ -42,7 +49,7 @@
             </div>
             <div class="form-group">
                 <label>Last Seen Location</label>
-                <input name="LastSeenLocation" class="form-control-warm" required />
+                <input name="LastSeenLocation" id="LastSeenLocation" class="form-control-warm" required />
             </div>
         </div>
         <div class="form-row">
@@ -52,23 +59,25 @@
             </div>
             <div class="form-group">
                 <label>Guardian Phone</label>
-                <input name="GuardianPhone" class="form-control-warm" required />
+                <input name="GuardianPhone" id="GuardianPhone" class="form-control-warm" required placeholder="03001234567" />
+                <span id="GuardianPhone-error" class="field-error"></span>
             </div>
         </div>
         <div class="form-group">
             <label>Guardian CNIC</label>
-            <input name="GuardianCNIC" class="form-control-warm" placeholder="00000-0000000-0" />
+            <input name="GuardianCNIC" id="GuardianCNIC" class="form-control-warm" placeholder="1234567890123" />
+            <span id="GuardianCNIC-error" class="field-error"></span>
         </div>
         <div class="form-group">
             <label>Description / Identifying Features</label>
             <textarea name="Description" class="form-control-warm" rows="3"></textarea>
         </div>
 
-        <div class="form-group" style="margin-top:1rem">
-            <label>Last Seen Location — Pin on Map (optional)</label>
-            <div id="zainabMap" style="height:280px;border-radius:12px;margin-top:8px;border:1px solid var(--border);"></div>
-            <div id="z-coords" style="font-size:0.85rem;color:var(--muted);margin-top:6px;"></div>
-        </div>
+        @await Html.PartialAsync("_LocationPicker", new ViewDataDictionary(ViewData) {
+            { "MapId", "zainabMap" },
+            { "MapLabel", "Last Seen Location — Pin on Map (optional)" },
+            { "MapHeight", "280px" }
+        })
         <input type="hidden" name="Latitude" id="z-lat" />
         <input type="hidden" name="Longitude" id="z-lng" />
 
@@ -78,10 +87,21 @@
     </form>
 </div>
 
-@if (ViewBag.ActiveAlerts != null && ((List<MissingChildModel>)ViewBag.ActiveAlerts).Count > 0)
+@{
+    var currentView = ViewBag.CurrentView as string ?? "active";
+    var alerts = ViewBag.ActiveAlerts as PaginatedList<SentinelPulse.Models.MissingChildModel>;
+}
+
+<div id="list-section">
+    <div style="margin-bottom: 1.5rem; display: flex; gap: 0.5rem;">
+        <a href="?view=active#list-section" class="btn-ghost" style="@(currentView == "active" ? "background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber);" : "")">Active Alerts</a>
+        <a href="?view=archived#list-section" class="btn-ghost" style="@(currentView == "archived" ? "background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber);" : "")">Archived Alerts</a>
+    </div>
+
+@if (alerts != null && alerts.Count > 0)
 {
     <div class="glass-card" style="padding:2rem">
-        <h3 style="color:var(--amber);margin-bottom:1rem">Active Alerts</h3>
+        <h3 style="color:var(--amber);margin-bottom:1rem">@(currentView == "archived" ? "Archived Alerts" : "Active Alerts")</h3>
         <table class="data-table">
             <thead>
                 <tr>
@@ -90,7 +110,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var a in (List<MissingChildModel>)ViewBag.ActiveAlerts)
+                @foreach (var a in alerts)
                 {
                     <tr onclick="window.location='/Dashboard/ZainabAlertDetails/@a.AlertId'" style="cursor:pointer;" title="Click to view details">
                         <td><a href="/Dashboard/ZainabAlertDetails/@a.AlertId" class="link-amber" style="text-decoration:none;"><strong>ZA-@a.AlertId</strong></a></td>
@@ -106,33 +126,98 @@
             </tbody>
         </table>
     </div>
+
+    @if (alerts.TotalItems > 0)
+    {
+        <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; color: var(--text-muted); font-size: 0.9rem;">
+            <div>
+                Showing @(((alerts.PageIndex - 1) * 20) + 1) to @(Math.Min(alerts.PageIndex * 20, alerts.TotalItems)) of @alerts.TotalItems
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                @if (alerts.HasPreviousPage)
+                {
+                    <a href="?view=@currentView&pageNumber=@(alerts.PageIndex - 1)#list-section" class="btn-ghost" style="padding: 0.25rem 0.5rem;">Prev</a>
+                }
+                @if (alerts.HasNextPage)
+                {
+                    <a href="?view=@currentView&pageNumber=@(alerts.PageIndex + 1)#list-section" class="btn-ghost" style="padding: 0.25rem 0.5rem;">Next</a>
+                }
+            </div>
+        </div>
+    }
 }
+else
+{
+    <div style="padding: 2rem; text-align: center; color: var(--text-muted);">
+        No @currentView alerts found.
+    </div>
+}
+</div>
 
 @section Scripts {
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="~/js/location-picker.js" asp-append-version="true"></script>
 <script>
-    var zMap = L.map('zainabMap').setView([33.6844, 73.0479], 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(zMap);
-
-    var zMarker = null;
-    zMap.on('click', function(e) {
-        var lat = e.latlng.lat.toFixed(6);
-        var lng = e.latlng.lng.toFixed(6);
-        document.getElementById('z-lat').value = lat;
-        document.getElementById('z-lng').value = lng;
-        document.getElementById('z-coords').textContent = 'Pinned: ' + lat + ', ' + lng;
-        if (zMarker) zMarker.setLatLng(e.latlng);
-        else {
-            zMarker = L.marker(e.latlng, { draggable: true }).addTo(zMap);
-            zMarker.on('dragend', function(ev) {
-                var pos = ev.target.getLatLng();
-                document.getElementById('z-lat').value = pos.lat.toFixed(6);
-                document.getElementById('z-lng').value = pos.lng.toFixed(6);
-                document.getElementById('z-coords').textContent = 'Pinned: ' + pos.lat.toFixed(6) + ', ' + pos.lng.toFixed(6);
-            });
-        }
+    // Reusable location picker for the Zainab Alert create form
+    initLocationPicker({
+        mapId:           'zainabMap',
+        latInputId:      'z-lat',
+        lngInputId:      'z-lng',
+        addressInputId:  'LastSeenLocation',
+        coordsDisplayId: 'zainabMap-coords'
     });
+
+    // Client-side CNIC & Phone validation for Zainab Alert form
+    (function() {
+        var form = document.querySelector('form[action*="ZainabAlert"]');
+        if (!form) return;
+        form.addEventListener('submit', function(e) {
+            var valid = true;
+            var cnicInput = document.getElementById('GuardianCNIC');
+            var cnicError = document.getElementById('GuardianCNIC-error');
+            var phoneInput = document.getElementById('GuardianPhone');
+            var phoneError = document.getElementById('GuardianPhone-error');
+
+            // Reset errors
+            if (cnicError) { cnicError.textContent = ''; }
+            if (phoneError) { phoneError.textContent = ''; }
+            if (cnicInput) { cnicInput.style.borderColor = ''; }
+            if (phoneInput) { phoneInput.style.borderColor = ''; }
+
+            // Validate CNIC (optional field, but if filled must match format)
+            if (cnicInput && cnicInput.value.trim()) {
+                if (!/^\d{13}$/.test(cnicInput.value.trim())) {
+                    valid = false;
+                    cnicError.textContent = 'CNIC must be exactly 13 digits, no dashes or spaces.';
+                    cnicInput.style.borderColor = 'var(--danger, #d6241a)';
+                }
+            }
+
+            // Validate Phone (required field)
+            if (phoneInput && phoneInput.value.trim()) {
+                if (!/^(0\d{10}|92\d{10})$/.test(phoneInput.value.trim())) {
+                    valid = false;
+                    phoneError.textContent = 'Phone must be 11 digits starting with 0, or 12 digits starting with 92, no dashes or spaces.';
+                    phoneInput.style.borderColor = 'var(--danger, #d6241a)';
+                }
+            }
+
+            if (!valid) {
+                e.preventDefault();
+            }
+        });
+
+        // Clear error on input
+        ['GuardianCNIC', 'GuardianPhone'].forEach(function(id) {
+            var input = document.getElementById(id);
+            var error = document.getElementById(id + '-error');
+            if (input && error) {
+                input.addEventListener('input', function() {
+                    error.textContent = '';
+                    input.style.borderColor = '';
+                });
+            }
+        });
+    })();
 </script>
 }

@@ -11,7 +11,7 @@
 
 @if (TempData["Error"] != null)
 {
-    <div class="glass-card" style="border-left:3px solid #e74c3c;margin-bottom:1rem;padding:.75rem 1rem;color:#e74c3c">
+    <div class="glass-card" style="border-left:3px solid var(--danger);margin-bottom:1rem;padding:.75rem 1rem;color:var(--danger)">
         <i class="bi bi-exclamation-triangle-fill"></i> @TempData["Error"]
     </div>
 }
@@ -25,7 +25,8 @@
         <select id="fir-status-filter" class="form-control-warm" style="max-width:200px">
             <option value="">All Status</option>
             <option>Open</option>
-            <option>Investigation</option>
+            <option>Under Investigation</option>
+            <option>Pending Approval</option>
             <option>Closed</option>
         </select>
     </div>

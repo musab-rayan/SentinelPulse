@@ -9,22 +9,22 @@
 </div>
 
 <div class="stats-grid">
-    <div class="glass-card stat-card">
+    <div class="glass-card stat-card" onclick="location.href='/Cases/Index'">
         <div class="stat-icon amber"><i class="bi bi-folder2-open"></i></div>
         <div class="stat-label">Active Cases</div>
         <div class="stat-value counter" data-target="@Model.ActiveCases">0</div>
     </div>
-    <div class="glass-card stat-card">
+    <div class="glass-card stat-card" onclick="location.href='/Cases/Index#pending-approval'">
         <div class="stat-icon blue"><i class="bi bi-hourglass-split"></i></div>
         <div class="stat-label">Pending Approval</div>
         <div class="stat-value counter" data-target="@Model.PendingFIRs">0</div>
     </div>
-    <div class="glass-card stat-card">
+    <div class="glass-card stat-card" onclick="location.href='/Dashboard/Officers'">
         <div class="stat-icon green"><i class="bi bi-people-fill"></i></div>
         <div class="stat-label">Total Officers</div>
         <div class="stat-value counter" data-target="@Model.TotalOfficers">0</div>
     </div>
-    <div class="glass-card stat-card">
+    <div class="glass-card stat-card" onclick="location.href='/Cases/Index?status=Closed'">
         <div class="stat-icon red"><i class="bi bi-check2-circle"></i></div>
         <div class="stat-label">Closed Cases</div>
         <div class="stat-value counter" data-target="@Model.ClosedCases">0</div>
@@ -48,14 +48,35 @@
             @foreach (var alert in zainabAlerts)
             {
                 <a href="/Dashboard/ZainabAlertDetails/@alert.AlertId" style="text-decoration:none;color:inherit;">
-                    <div style="padding:14px;border:1px solid var(--border);border-radius:10px;transition:all 0.15s;background:var(--surface);" onmouseover="this.style.borderColor='var(--border-strong)';this.style.boxShadow='var(--shadow-md)';" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none';">
-                        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px;">
+                    <div class="glass-card" style="padding:14px;border-radius:10px;transition:transform 0.2s, box-shadow 0.2s;background:var(--nbg);box-shadow:var(--raise);" onmouseover="this.style.boxShadow='var(--inset)';" onmouseout="this.style.boxShadow='var(--raise)';">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
                             <span class="badge-num">ZA-@alert.AlertId.ToString("D3")</span>
-                            <span class="status-badge emergency">@alert.Status</span>
+                            <div style="display:flex;gap:4px;align-items:center;">
+                                @if (!string.IsNullOrEmpty(alert.PendingStatus))
+                                {
+                                    <span class="status-badge pending-approval">PENDING APPROVAL</span>
+                                }
+                                <span class="status-badge emergency">@alert.Status</span>
+                            </div>
                         </div>
-                        <div style="font-weight:600;font-size:0.95rem;margin-bottom:4px;">@alert.ChildName</div>
-                        <div class="text-muted-warm">Age @alert.Age · @alert.Gender · @alert.LastSeenLocation</div>
-                        <div class="text-muted-warm" style="margin-top:6px;font-size:0.72rem;">@alert.ReportedDate.ToString("dd MMM HH:mm")</div>
+                        <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px;">
+                            @if (!string.IsNullOrEmpty(alert.PhotoPath))
+                            {
+                                <img src="@alert.PhotoPath" alt="@alert.ChildName" style="width:48px;height:48px;border-radius:50%;object-fit:cover;box-shadow:var(--inset);" />
+                            }
+                            else
+                            {
+                                <div style="width:48px;height:48px;border-radius:50%;background:var(--txt);display:grid;place-items:center;font-weight:bold;color:var(--nbg);box-shadow:var(--inset);">
+                                    @(alert.ChildName.Substring(0,1).ToUpper())
+                                </div>
+                            }
+                            <div>
+                                <div style="font-weight:600;font-size:0.95rem;">@alert.ChildName</div>
+                                <div class="text-muted-warm" style="font-size:0.8rem;">Age @alert.Age · @alert.Gender</div>
+                            </div>
+                        </div>
+                        <div class="text-muted-warm" style="font-size:0.8rem;margin-bottom:4px;">@alert.LastSeenLocation</div>
+                        <div class="text-muted-warm" style="font-size:0.72rem;">@alert.ReportedDate.ToString("dd MMM HH:mm")</div>
                     </div>
                 </a>
             }

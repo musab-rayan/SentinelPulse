@@ -1,4 +1,4 @@
-﻿@model SentinelPulse.Models.CaseModel
+@model SentinelPulse.Models.CaseModel
 @{ ViewData["Title"] = $"Case {Model.CaseId}"; }
 
 <div class="page-header">
@@ -6,8 +6,15 @@
         <h1 class="page-title">@Model.Title</h1>
         <p class="page-sub"><span class="badge-num">@Model.CaseId</span> Â· Assigned to @Model.AssignedOfficer</p>
     </div>
-    <a asp-action="Index" class="btn-ghost"><i class="bi bi-arrow-left"></i> Back</a>
+<a asp-action="Index" class="btn-ghost"><i class="bi bi-arrow-left"></i> Back</a>
 </div>
+
+@if (TempData["Error"] != null)
+{
+    <div style="background:var(--danger-soft);color:var(--danger);padding:12px 16px;border-radius:10px;border:1px solid var(--danger-soft-border);margin-bottom:16px;">
+        <i class="bi bi-exclamation-triangle-fill"></i> @TempData["Error"]
+    </div>
+}
 
 <div class="glass-card" style="margin-bottom:20px;">
     <h3>Complainant</h3>
@@ -16,10 +23,23 @@
     <div class="kv"><label>Phone</label><div>@ViewBag.ComplainantPhone</div></div>
 </div>
 
-<div style="margin-bottom:20px;">
+<div style="margin-bottom:20px; display:flex; gap:10px;">
     <button onclick="window.print()" class="btn-primary-amber no-print" style="width:auto;padding:8px 24px;">
         <i class="bi bi-printer"></i> Print Case Report
     </button>
+    @{
+        var sessionRole = Context.Session.GetString("OfficerRole");
+        var sessionName = Context.Session.GetString("OfficerName");
+    }
+    @if ((Model.Status == "Closed" || Model.Status == "Rejected") && (sessionRole == "Admin" || sessionRole == "DSP"))
+    {
+        <form asp-controller="Cases" asp-action="ReopenCase" asp-route-id="@Model.CaseId" method="post" class="no-print" onsubmit="return confirm('Are you sure you want to reopen this case?');">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn-primary-amber" style="width:auto;padding:8px 24px;background:var(--warning);border-color:var(--warning);color:white;">
+                <i class="bi bi-arrow-counterclockwise"></i> Reopen Case
+            </button>
+        </form>
+    }
 </div>
 
 <div class="dash-grid">
@@ -76,9 +96,27 @@
 }
 
 @{
-    var sessionRole = Context.Session.GetString("OfficerRole");
-    var sessionName = Context.Session.GetString("OfficerName");
-    var canUpdate = sessionRole == "Admin" || Model.AssignedOfficer == sessionName;
+    var canUpdate = (sessionRole == "Admin" || sessionRole == "DSP" || Model.AssignedOfficer == sessionName) && ViewBag.IsReadOnly != true;
+}
+
+@if (Model.Status == "Pending Approval" && (sessionRole == "Admin" || sessionRole == "DSP"))
+{
+    <div class="glass-card" style="margin-top:1rem; border-left: 3px solid var(--amber);">
+        <h3><i class="bi bi-hourglass-split" style="color:var(--amber)"></i> Closure Approval</h3>
+        <p style="margin-top: 8px; color: var(--text-secondary);">This case has been submitted for closure. Please review the details before approving.</p>
+        <div style="display:flex;gap:12px;margin-top:16px;">
+            <form asp-controller="Cases" asp-action="UpdateStatus" asp-route-id="@Model.CaseId" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="status" value="Closed" />
+                <button type="submit" class="btn-primary-amber"><i class="bi bi-check2"></i> Approve Closure</button>
+            </form>
+            <form asp-controller="Cases" asp-action="UpdateStatus" asp-route-id="@Model.CaseId" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="status" value="Under Investigation" />
+                <button type="submit" class="btn-ghost"><i class="bi bi-x"></i> Reject & Return</button>
+            </form>
+        </div>
+    </div>
 }
 
 @if (canUpdate && Model.Status != "Closed")
@@ -151,19 +189,49 @@
         <span class="badge-num">@evidenceList.Count items</span>
     </div>
 
+    @if (TempData["UploadError"] != null)
+    {
+        <div style="background:var(--danger-soft);color:var(--danger);padding:10px 14px;border-radius:8px;border:1px solid var(--danger-soft-border);margin-bottom:1rem;font-size:0.9rem;">
+            <i class="bi bi-exclamation-triangle-fill"></i> @TempData["UploadError"]
+        </div>
+    }
+
     @if (evidenceList.Any())
     {
         <div class="table-responsive" style="margin-bottom:1.5rem;">
             <table class="data-table">
                 <thead>
-                    <tr><th>Type</th><th>Description</th><th>Collected By</th><th>Date</th>@if (sessionRole == "Admin") { <th></th> }</tr>
+                    <tr><th>Type</th><th>Description</th><th>File</th><th>Collected By</th><th>Date</th>@if (sessionRole == "Admin") { <th></th> }</tr>
                 </thead>
                 <tbody>
                     @foreach (var ev in evidenceList)
                     {
+                        var evExt = string.IsNullOrEmpty(ev.FilePath) ? "" : System.IO.Path.GetExtension(ev.FilePath).ToLowerInvariant();
+                        var evIsImage = evExt == ".jpg" || evExt == ".jpeg" || evExt == ".png";
                         <tr>
                             <td><span class="status-badge investigation">@ev.Type</span></td>
                             <td>@ev.Description</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(ev.FilePath))
+                                {
+                                    if (evIsImage)
+                                    {
+                                        <a href="@ev.FilePath" target="_blank">
+                                            <img src="@ev.FilePath" alt="Evidence" style="width:80px;height:60px;object-fit:cover;border-radius:6px;" />
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <a href="@ev.FilePath" target="_blank" class="btn-ghost" style="display:inline-flex;width:auto;padding:4px 12px;font-size:.8rem;gap:4px;">
+                                            <i class="bi bi-@(evExt == ".pdf" ? "file-earmark-pdf" : "camera-video")"></i> View / Download
+                                        </a>
+                                    }
+                                }
+                                else
+                                {
+                                    <span style="color:var(--muted);font-size:.8rem;">—</span>
+                                }
+                            </td>
                             <td>@ev.CollectedBy</td>
                             <td>@ev.CollectedDate.ToString("dd MMM yyyy HH:mm")</td>
                             @if (sessionRole == "Admin")
@@ -193,7 +261,7 @@
     @if (canUpdate)
     {
         <h4 style="font-size:.95rem;margin-bottom:.75rem;"><i class="bi bi-plus-circle"></i> Add Evidence</h4>
-        <form method="post" asp-controller="Evidence" asp-action="Add">
+        <form method="post" asp-controller="Evidence" asp-action="Add" enctype="multipart/form-data">
             @Html.AntiForgeryToken()
             <input type="hidden" name="CaseId" value="@Model.CaseId" />
             <div class="form-row">
@@ -214,6 +282,10 @@
                     <textarea name="Description" class="form-control-warm" rows="2" required
                         placeholder="Describe the evidence item..."></textarea>
                 </div>
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>Attach File (optional — jpg, png, pdf, mp4 — max 10 MB)</label>
+                <input type="file" name="MediaFile" accept=".jpg,.jpeg,.png,.pdf,.mp4" class="form-control-warm" style="padding:8px;" />
             </div>
             <button type="submit" class="btn-primary-amber" style="width:auto;padding:.5rem 1.5rem;">
                 <i class="bi bi-plus-lg"></i> Add Evidence
@@ -255,7 +327,7 @@
                     }
                     @if (!string.IsNullOrEmpty(s.FaceDetectionResult))
                     {
-                        <div style="margin-top:.5rem;padding:.4rem .7rem;background:rgba(200,150,42,0.12);border-radius:6px;font-size:.78rem;color:var(--primary-2);">
+                        <div style="margin-top:.5rem;padding:.4rem .7rem;background:var(--warning-soft);border:1px solid var(--warning-soft-border);border-radius:6px;font-size:.78rem;color:var(--warning);">
                             <i class="bi bi-cpu"></i> @s.FaceDetectionResult
                         </div>
                     }
@@ -269,7 +341,7 @@
 {
     <div class="glass-card" style="margin-top:1.5rem;">
         <h3><i class="bi bi-person-plus"></i> Add Suspect</h3>
-        <form method="post" asp-controller="Suspects" asp-action="Add" style="margin-top:16px;">
+        <form method="post" asp-controller="Suspects" asp-action="Add" enctype="multipart/form-data" style="margin-top:16px;">
             @Html.AntiForgeryToken()
             <input type="hidden" name="CaseId" value="@Model.CaseId" />
             <div class="form-row">
@@ -279,16 +351,55 @@
                 </div>
                 <div class="form-group">
                     <label>CNIC (optional)</label>
-                    <input type="text" name="CNIC" class="form-control-warm" placeholder="00000-0000000-0" />
+                    <input type="text" name="CNIC" id="suspect-cnic" class="form-control-warm" placeholder="1234567890123" />
+                    <span id="suspect-cnic-error" class="field-error"></span>
                 </div>
             </div>
             <div class="form-group" style="margin-bottom:12px;">
                 <label>Description</label>
                 <textarea name="Description" class="form-control-warm" rows="2"></textarea>
             </div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>Photo (optional — jpg, jpeg, png — max 10 MB)</label>
+                <input type="file" name="Photo" accept=".jpg,.jpeg,.png" class="form-control-warm" style="padding:8px;" />
+            </div>
             <button type="submit" class="btn-primary-amber" style="width:auto;padding:8px 24px;">Add Suspect</button>
         </form>
     </div>
+}
+
+@section Scripts {
+<script>
+    // Client-side CNIC validation for suspect form
+    (function() {
+        var suspectForm = document.querySelector('form[action*="Suspects/Add"]');
+        if (!suspectForm) return;
+        suspectForm.addEventListener('submit', function(e) {
+            var cnicInput = document.getElementById('suspect-cnic');
+            var cnicError = document.getElementById('suspect-cnic-error');
+            if (!cnicInput || !cnicError) return;
+
+            // Reset
+            cnicError.textContent = '';
+            cnicInput.style.borderColor = '';
+
+            if (cnicInput.value.trim() && !/^\d{13}$/.test(cnicInput.value.trim())) {
+                e.preventDefault();
+                cnicError.textContent = 'CNIC must be exactly 13 digits, no dashes or spaces.';
+                cnicInput.style.borderColor = 'var(--danger, #d6241a)';
+            }
+        });
+
+        var cnicInput = document.getElementById('suspect-cnic');
+        var cnicError = document.getElementById('suspect-cnic-error');
+        if (cnicInput && cnicError) {
+            cnicInput.addEventListener('input', function() {
+                cnicError.textContent = '';
+                cnicInput.style.borderColor = '';
+            });
+        }
+    })();
+</script>
 }
 
 @section PrintArea {

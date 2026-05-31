@@ -12,7 +12,9 @@
     @foreach (var o in Model)
     {
         var activeCases = ViewData[$"cases_{o.Id}"] as int? ?? 0;
-        var statusColor = o.Status == "Active" ? "var(--success)" : "var(--primary-2)";
+        var statusColor = o.Status == "Active" ? "var(--success)" : "var(--text-secondary)";
+        var statusBg = o.Status == "Active" ? "var(--success-soft)" : "var(--surface-2)";
+        var statusBorder = o.Status == "Active" ? "var(--success-soft-border)" : "var(--border)";
         <div class="glass-card" style="display:flex;flex-direction:column;gap:.75rem;">
             <div style="display:flex;align-items:center;gap:1rem;">
                 <div class="officer-avatar" style="width:52px;height:52px;font-size:1.3rem;flex-shrink:0;">
@@ -22,7 +24,7 @@
                     <div style="font-weight:700;font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">@o.Name</div>
                     <div style="font-size:.8rem;color:var(--muted);"><span class="badge-num">@o.BadgeNumber</span> · @o.Role</div>
                 </div>
-                <span style="display:inline-block;padding:.2rem .65rem;border-radius:10px;font-size:.72rem;font-weight:600;text-transform:uppercase;background:rgba(76,175,125,0.15);color:@statusColor;white-space:nowrap;">
+                <span style="display:inline-block;padding:.2rem .65rem;border-radius:10px;font-size:.72rem;font-weight:600;text-transform:uppercase;background:@statusBg;border:1px solid @statusBorder;color:@statusColor;white-space:nowrap;">
                     @(o.Status ?? "Active")
                 </span>
             </div>

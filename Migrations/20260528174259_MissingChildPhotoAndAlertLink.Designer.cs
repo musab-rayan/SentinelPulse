@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SentinelPulse;
 
@@ -11,9 +12,11 @@ using SentinelPulse;
 namespace SentinelPulse.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260528174259_MissingChildPhotoAndAlertLink")]
+    partial class MissingChildPhotoAndAlertLink
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -86,15 +89,13 @@ namespace SentinelPulse.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("CaseId");
-
-                    b.HasIndex("Status", "DateOpened");
 
                     b.ToTable("Cases");
                 });
@@ -193,25 +194,6 @@ namespace SentinelPulse.Migrations
                     b.ToTable("FIRs");
                 });
 
-            modelBuilder.Entity("SentinelPulse.Models.MissingChildAssignment", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("MissingChildId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("OfficerId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("MissingChildAssignments");
-                });
-
             modelBuilder.Entity("SentinelPulse.Models.MissingChildModel", b =>
                 {
                     b.Property<int>("AlertId")
@@ -270,9 +252,6 @@ namespace SentinelPulse.Migrations
                     b.Property<double?>("Longitude")
                         .HasColumnType("float");
 
-                    b.Property<string>("PendingStatus")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("PhotoPath")
                         .HasColumnType("nvarchar(max)");
 
@@ -287,22 +266,14 @@ namespace SentinelPulse.Migrations
                     b.Property<DateTime>("ReportedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime?>("RequestedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("RequestedByOfficerId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UpdateNotes")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("AlertId");
-
-                    b.HasIndex("Status", "ReportedDate");
 
                     b.ToTable("MissingChildren");
                 });

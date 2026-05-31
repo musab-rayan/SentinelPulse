@@ -1,20 +1,27 @@
-@model List<SentinelPulse.Models.CaseModel>
+@model PaginatedList<SentinelPulse.Models.CaseModel>
 @{
     ViewData["Title"] = "Cases";
     var role = Context.Session.GetString("OfficerRole");
-    var pendingCases = Model.Where(c => c.Status == "Pending Approval").ToList();
+    var currentView = ViewBag.CurrentView as string ?? "active";
+    var pendingCases = currentView == "active" ? Model.Where(c => c.Status == "Pending Approval").ToList() : new List<SentinelPulse.Models.CaseModel>();
 }
 
 <div class="page-header">
     <div>
         <h1 class="page-title">Case Registry</h1>
-        <p class="page-sub">@(role == "Admin" ? "All active cases" : "Assigned to you")</p>
+        <p class="page-sub">@(role == "Admin" ? "All cases" : "Assigned to you")</p>
     </div>
 </div>
 
+<div id="list-section">
+    <div style="margin-bottom: 1.5rem; display: flex; gap: 0.5rem;">
+        <a href="?view=active#list-section" class="btn-ghost" style="@(currentView == "active" ? "background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber);" : "")">Active Cases</a>
+        <a href="?view=archived#list-section" class="btn-ghost" style="@(currentView == "archived" ? "background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber);" : "")">Archived Cases</a>
+    </div>
+
 @if (role == "Admin" && pendingCases.Any())
 {
-    <div class="glass-card" style="margin-bottom:1.5rem; border-left: 3px solid var(--amber);">
+    <div id="pending-approval" class="glass-card" style="margin-bottom:1.5rem; border-left: 3px solid var(--amber);">
         <div class="card-header-row">
             <h3><i class="bi bi-hourglass-split" style="color:var(--amber)"></i> Pending Closure Approval</h3>
             <span class="badge-num">@pendingCases.Count pending</span>
@@ -28,8 +35,8 @@
                     @foreach (var c in pendingCases)
                     {
                         <tr>
-                            <td><span class="badge-num">@c.CaseId</span></td>
-                            <td>@c.Title</td>
+                            <td><a asp-controller="Cases" asp-action="Details" asp-route-id="@c.CaseId" style="text-decoration:none;"><span class="badge-num">@c.CaseId</span></a></td>
+                            <td><a asp-controller="Cases" asp-action="Details" asp-route-id="@c.CaseId" style="color:var(--text);font-weight:500;text-decoration:underline;">@c.Title</a></td>
                             <td>@c.AssignedOfficer</td>
                             <td>@c.LastUpdated.ToString("dd MMM HH:mm")</td>
                             <td onclick="event.stopPropagation()">
@@ -57,19 +64,21 @@
 }
 
 <div class="glass-card">
-    <div class="filter-bar">
-        <div class="search-wrap">
-            <i class="bi bi-search"></i>
-            <input id="case-search" placeholder="Search by Case ID, officer, status..." />
+    <form onsubmit="window.location.hash='list-section'; return false;">
+        <div class="filter-bar">
+            <div class="search-wrap">
+                <i class="bi bi-search"></i>
+                <input id="case-search" placeholder="Search by Case ID, officer, status..." />
+            </div>
+            <select id="status-filter" class="form-control-warm" style="max-width:200px">
+                <option value="">All Status</option>
+                <option>Open</option>
+                <option>Under Investigation</option>
+                <option>Pending Approval</option>
+                <option>Closed</option>
+            </select>
         </div>
-        <select id="status-filter" class="form-control-warm" style="max-width:200px">
-            <option value="">All Status</option>
-            <option>Open</option>
-            <option>Under Investigation</option>
-            <option>Pending Approval</option>
-            <option>Closed</option>
-        </select>
-    </div>
+    </form>
 
     <div class="table-responsive">
         <table class="data-table" id="cases-table">
@@ -110,6 +119,32 @@
             </tbody>
         </table>
     </div>
+    
+    @if (Model.TotalItems > 0)
+    {
+        <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; color: var(--text-muted); font-size: 0.9rem;">
+            <div>
+                Showing @(((Model.PageIndex - 1) * 20) + 1) to @(Math.Min(Model.PageIndex * 20, Model.TotalItems)) of @Model.TotalItems
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                @if (Model.HasPreviousPage)
+                {
+                    <a href="?view=@currentView&pageNumber=@(Model.PageIndex - 1)#list-section" class="btn-ghost" style="padding: 0.25rem 0.5rem;">Prev</a>
+                }
+                @if (Model.HasNextPage)
+                {
+                    <a href="?view=@currentView&pageNumber=@(Model.PageIndex + 1)#list-section" class="btn-ghost" style="padding: 0.25rem 0.5rem;">Next</a>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <div style="padding: 2rem; text-align: center; color: var(--text-muted);">
+            No @currentView cases found.
+        </div>
+    }
+</div>
 </div>
 
 <div class="modal-backdrop hidden" id="case-modal">
