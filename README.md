@@ -6,7 +6,7 @@ SentinelPulse is a full-stack ASP.NET Core MVC web application developed for pol
 ## Tech Stack
 - **Framework**: ASP.NET Core MVC (.NET 9.0)
 - **Database**: Entity Framework Core (v9.0.0), SQL Server (LocalDB)
-- **Frontend**: Razor Views, Bootstrap 5.3, Bootstrap Icons, Custom CSS (Glassmorphism UI, Light/Dark Theme toggle)
+- **Frontend**: Razor Views, Bootstrap 5.3, Bootstrap Icons, Custom CSS (neuomorphic UI, Light/Dark Theme toggle)
 - **Typography**: Geist and Geist Mono fonts
 - **Mapping & Geocoding**: Leaflet.js, OpenStreetMap, Nominatim API
 - **Analytics**: Chart.js
@@ -21,10 +21,13 @@ SentinelPulse is a full-stack ASP.NET Core MVC web application developed for pol
 - **Evidence & Suspect Logging**: Allows attaching suspect profiles and evidence records to specific cases.
 
 ## Screenshots
-<!-- TODO: Add screenshot of the Login screen -->
-<!-- TODO: Add screenshot of the DSP Command Dashboard -->
-<!-- TODO: Add screenshot of the FIR 3-Step Wizard -->
-<!-- TODO: Add screenshot of the Interactive Crime Map -->
+<img width="1920" height="855" alt="image" src="https://github.com/user-attachments/assets/71f25fdb-ceca-42f9-a5a0-e67c52ea61d0" />
+<img width="1920" height="867" alt="image" src="https://github.com/user-attachments/assets/0a21a603-4626-4931-aff1-82b76c65f663" />
+<img width="1920" height="860" alt="image" src="https://github.com/user-attachments/assets/8761c06b-aa31-44ec-b744-3ca9cca0d387" />
+<img width="1920" height="864" alt="image" src="https://github.com/user-attachments/assets/d24ce802-1e43-4935-a616-1abffb8b1d16" />
+<img width="1920" height="859" alt="image" src="https://github.com/user-attachments/assets/934f4b4a-a2ed-464a-89ec-8296c1fcf6d3" />
+<img width="1920" height="864" alt="image" src="https://github.com/user-attachments/assets/55e54214-0d33-44a3-af76-4a263df7231e" />
+
 
 ## Getting Started
 
@@ -69,9 +72,8 @@ Authentication is handled by the `AccountController`. The login action queries t
 **Demo Credentials:**
 | Role | Username (Badge Number) | Password |
 |---|---|---|
-| DSP (Admin) | `[PLACEHOLDER_ADMIN_BADGE]` | `[PLACEHOLDER_ADMIN_PASS]` |
-| Officer | `[PLACEHOLDER_OFFICER_BADGE]` | `[PLACEHOLDER_OFFICER_PASS]` |
-*(Note: Replace with database seed values if applicable. Never commit real credentials.)*
+| DSP (Admin) | `admin` | `admin123` |
+| Officer | `SP-1042` | `kamran123` |
 
----
-*Advanced Programming course project, NUML Islamabad.*
+
+
