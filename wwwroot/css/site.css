@@ -15,8 +15,8 @@
   --nav-mut: #99A2B1;
   
   /* Layout Spacing */
-  --spacing-gap: 32px;
-  --spacing-section: 48px;
+  --spacing-gap: 24px;
+  --spacing-section: 32px;
   
   /* Corner Radii */
   --radius-xs: 50px; /* Badge pill */
@@ -43,7 +43,8 @@
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
+html { font-size: 16px; margin: 0; padding: 0; }
+body { margin: 0; padding: 0; }
 
 @view-transition {
   navigation: auto;
@@ -55,9 +56,9 @@ body {
   background-repeat: no-repeat;
   color: var(--txt);
   font-family: 'Geist', -apple-system, 'Segoe UI', Roboto, sans-serif;
-  font-size: 17px;
+  font-size: 0.9375rem;
   font-weight: 400;
-  line-height: 25px;
+  line-height: 1.5;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -69,15 +70,15 @@ body {
 [data-theme="dark"] 
 
 .page-title {
-  font-size: 34px;
+  font-size: 1.875rem;
   font-weight: 700;
   letter-spacing: -0.03em;
-  line-height: 41px;
+  line-height: 1.2;
   color: var(--txt);
   margin: 0;
 }
 .page-sub {
-  font-size: 17px;
+  font-size: 0.95rem;
   color: var(--mut);
   font-weight: 400;
   margin-top: 8px;
@@ -92,10 +93,10 @@ body {
   flex-wrap: wrap;
 }
 h1, h2, h3, h4 { letter-spacing: -0.02em; font-weight: 600; color: var(--txt); }
-h1 { font-size: 34px; line-height: 41px; }
-h2 { font-size: 28px; line-height: 34px; }
-h3 { font-size: 21px; line-height: 26px; }
-h4 { font-size: 17px; line-height: 22px; }
+h1 { font-size: 1.875rem; line-height: 1.2; }
+h2 { font-size: 1.5rem; line-height: 1.2; }
+h3 { font-size: 1.25rem; line-height: 1.2; }
+h4 { font-size: 1rem; line-height: 1.2; }
 
 .glass-card, .top-nav, .main-content, nav, main {
   position: relative;
@@ -113,7 +114,7 @@ h4 { font-size: 17px; line-height: 22px; }
   border: none;
   border-radius: var(--radius-md);
   box-shadow: var(--raise-lg);
-  padding: 20px;
+  padding: 24px;
   transition: transform 250ms ease, box-shadow 250ms ease;
 }
 .glass-card:hover {
@@ -648,7 +649,7 @@ a .stat-card,
   background: var(--nbg);
   border: none;
   border-radius: var(--radius-lg);
-  padding: 48px 40px;
+  padding: 32px 28px;
   box-shadow: var(--raise-lg);
   backdrop-filter: blur(20px);
 }
@@ -670,7 +671,7 @@ a .stat-card,
   box-shadow: var(--shadow-sm);
 }
 .login-title {
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--txt);
@@ -755,10 +756,11 @@ a .stat-card,
   background: var(--nbg);
   color: var(--acc);
   border: none;
-  padding: 10px 20px;
+  padding: 10px 18px;
+  height: 40px;
   border-radius: var(--radius-sm);
   font-weight: 600;
-  font-size: 14px;
+  font-size: 0.9375rem;
   cursor: pointer;
   transition: box-shadow 200ms ease;
   font-family: inherit;
@@ -776,9 +778,10 @@ a .stat-card,
   background: var(--nbg);
   border: none;
   color: var(--txt);
-  padding: 10px 20px;
+  padding: 10px 18px;
+  height: 40px;
   border-radius: var(--radius-sm);
-  font-size: 14px;
+  font-size: 0.9375rem;
   font-weight: 500;
   cursor: pointer;
   transition: box-shadow 250ms ease, color 250ms ease;
@@ -809,7 +812,7 @@ a .stat-card,
 .alert-error:empty { display: none; }
 
 /* ========== WIZARD ========== */
-.wizard-card { max-width: 800px; margin: 0 auto; }
+.wizard-card { max-width: 760px; margin: 0 auto; }
 .wizard-progress { margin-bottom: var(--spacing-gap); }
 .progress-bar-track { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
 .progress-bar-fill { height: 100%; background: var(--acc); transition: width .4s ease; }
@@ -833,14 +836,15 @@ a .stat-card,
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
 .form-group { margin-bottom: 20px; }
-.form-group label { display: block; font-size: 12px; color: var(--mut); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+.form-group label { display: block; font-size: 0.8125rem; color: var(--mut); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
 .form-control-warm {
   background: var(--nbg);
   border: none;
   color: var(--txt);
-  padding: 12px 16px;
+  padding: 9px 12px;
+  height: 40px;
   border-radius: 10px;
-  font-size: 15px;
+  font-size: 0.9375rem;
   width: 100%;
   font-family: inherit;
   box-shadow: var(--raise);
